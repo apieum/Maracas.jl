@@ -110,7 +110,7 @@ end
 function record(ts::MaracasTestSet, t::Union{Fail, Error})
     ts.count += t;
     if myid() == 1
-        print_with_color(:white, ts.description, ": ")
+        print_with_color(:bold, ts.description, ": ")
         print(t)
         # don't print the backtrace for Errors because it gets printed in the show
         # method
@@ -143,7 +143,7 @@ function print_test_results(ts::MaracasTestSet)
     align = max(2 * ts.max_depth + ts.max_width, length("Test Summary:")) - Int(round(header_margin/2))
     # Print the outer test set header once
     pad = total(ts.count) == 0 ? "" : " "
-    print_with_color(:white, rpad("Test Summary:", align - header_margin, " "), " |", pad; bold = true)
+    print_with_color(:bold, rpad("Test Summary:", align - header_margin, " "), "$default_color |", pad; bold = true)
 
     print_passes_result(ts.count)
     print_fails_result(ts.count)
