@@ -46,8 +46,11 @@ type HeadersWidth
         new(pass_width, fail_width, error_width, broken_width, total_width)
     end
 end
-
-total(count::ResultsCount) = count.passes + count.fails + count.errors + count.broken
+passes(count::ResultsCount) = count.passes
+fails(count::ResultsCount)  = count.fails
+errors(count::ResultsCount) = count.errors
+broken(count::ResultsCount) = count.broken
+total(count::ResultsCount)  = count.passes + count.fails + count.errors + count.broken
 +(a::ResultsCount, b::ResultsCount) = ResultsCount(a.passes + b.passes, a.fails + b.fails, a.errors + b.errors, a.broken + b.broken)
 +(a::ResultsCount, b::Pass) = ResultsCount(a.passes + 1, a.fails, a.errors, a.broken)
 +(a::ResultsCount, b::Fail) = ResultsCount(a.passes, a.fails + 1, a.errors, a.broken)
@@ -138,6 +141,12 @@ function print_test_errors(t::Union{Fail, Error})
 end
 print_test_errors(t) = nothing
 
+function print_result(color::Symbol, title::AbstractString, result::Int)
+    if result > 0
+        print_with_color(color, lpad(title, max(length(title), ndigits(result))," "), "  "; bold = true)
+    end
+end
+
 
 function print_test_results(ts::MaracasTestSet)
     align = max(2 * ts.max_depth + ts.max_width, length("Test Summary:")) - Int(round(header_margin/2))
@@ -145,11 +154,11 @@ function print_test_results(ts::MaracasTestSet)
     pad = total(ts.count) == 0 ? "" : " "
     print_with_color(:bold, rpad("Test Summary:", align - header_margin, " "), "$default_color |", pad; bold = true)
 
-    print_passes_result(ts.count)
-    print_fails_result(ts.count)
-    print_errors_result(ts.count)
-    print_broken_result(ts.count)
-    print_total_result(ts.count)
+    print_result(pass_color, "Pass", passes(ts.count))
+    print_result(error_color, "Fail", fails(ts.count))
+    print_result(error_color, "Error", errors(ts.count))
+    print_result(warn_color, "Broken", broken(ts.count))
+    print_result(info_color, "Total", total(ts.count))
     println()
     # Recursively print a summary at every level
     print_counts(ts, 0, align, HeadersWidth(ts.count))
@@ -169,17 +178,17 @@ function finish(ts::MaracasTestSet)
         record(parent_ts, ts)
         return ts
     end
-    total_pass, total_fail, total_error, total_broken, total = tuple(ts.count)
 
     if TESTSET_PRINT_ENABLE[]
         print_test_results(ts)
     end
 
+    total_pass, total_fail, total_error, total_broken, subtotal = tuple(ts.count)
     # Finally throw an error as we are the outermost test set
-    if total != total_pass + total_broken
+    if subtotal != total_pass + total_broken
         # Get all the error/failures and bring them along for the ride
         efs = filter_errors(ts)
-        throw(TestSetException(total_pass,total_fail,total_error, total_broken, efs))
+        throw(TestSetException(total_pass, total_fail, total_error, total_broken, efs))
     end
 
     # return the testset so it is returned from the @testset macro
@@ -201,41 +210,6 @@ function filter_errors(ts::MaracasTestSet)
     efs
 end
 
-
-passes_result(result::ResultsCount) = lpad("Pass", max(length("Pass"), ndigits(result.passes))," ")
-function print_passes_result(result::ResultsCount)
-    if result.passes > 0
-        print_with_color(pass_color, passes_result(result), "  "; bold = true)
-    end
-end
-
-fails_result(result::ResultsCount) = lpad("Fail", max(length("Fail"), ndigits(result.fails))," ")
-function print_fails_result(result::ResultsCount)
-    if result.fails > 0
-        print_with_color(error_color, fails_result(result), "  "; bold = true)
-    end
-end
-
-errors_result(result::ResultsCount) = lpad("Error", max(length("Error"), ndigits(result.errors))," ")
-function print_errors_result(result::ResultsCount)
-    if result.errors > 0
-        print_with_color(error_color, errors_result(result), "  "; bold = true)
-    end
-end
-
-broken_result(result::ResultsCount) = lpad("Broken", max(length("Broken"), ndigits(result.broken))," ")
-function print_broken_result(result::ResultsCount)
-    if result.broken > 0
-        print_with_color(warn_color, broken_result(result), "  "; bold = true)
-    end
-end
-
-total_result(result::ResultsCount) = lpad("Total", max(length("Total"), ndigits(total(result)))," ")
-function print_total_result(result::ResultsCount)
-    if total(result) > 0
-        print_with_color(info_color, total_result(result); bold = true)
-    end
-end
 
 function print_result_column(color, result, width)
     if result > 0
