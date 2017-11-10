@@ -18,6 +18,7 @@ else
     const warn_color = Base.warn_color()
     const header_margin = 10
 end
+const pass_color = :green
 const default_color = Base.text_colors[:normal]
 const text_bold = Base.text_colors[:bold]
 
@@ -90,13 +91,6 @@ type MaracasTestSet <: AbstractTestSet
 end
 MaracasTestSet(desc) = MaracasTestSet(desc, [], ResultsCount(0, 0, 0, 0))
 ResultsCount(ts::MaracasTestSet) = ts.count
-# function ResultsCount(ts::MaracasTestSet)
-#     results_count = ResultsCount(ts.n_passed, 0, 0, 0)
-#     for t in ts.results
-#         results_count += t
-#     end
-#     return results_count
-# end
 # For a broken result, simply store the result
 function record(ts::MaracasTestSet, t::Broken)
     ts.count += t;
@@ -146,7 +140,7 @@ function print_test_results(ts::MaracasTestSet, depth_pad=0)
     align = max(get_alignment(ts, 0), length("Test Summary:"))
     # Print the outer test set header once
     pad = total(ts.count) == 0 ? "" : " "
-    print_with_color(:white, rpad("Test Summary:",align-header_margin," "), " |", pad; bold = true)
+    print_with_color(:white, rpad("Test Summary:", align - header_margin, " "), " |", pad; bold = true)
 
     print_passes_result(ts.count)
     print_fails_result(ts.count)
@@ -223,7 +217,7 @@ end
 passes_result(result::ResultsCount) = lpad("Pass", max(length("Pass"), ndigits(result.passes))," ")
 function print_passes_result(result::ResultsCount)
     if result.passes > 0
-        print_with_color(:green, passes_result(result), "  "; bold = true)
+        print_with_color(pass_color, passes_result(result), "  "; bold = true)
     end
 end
 
@@ -265,9 +259,8 @@ end
 # Recursive function that prints out the results at each level of
 # the tree of test sets
 function print_counts(ts::MaracasTestSet, depth, align, headers_width)
-
     print(rpad(string("  "^depth, ts.description), align, " "), " | ")
-    print_result_column(:green, ts.count.passes, headers_width.passes)
+    print_result_column(pass_color, ts.count.passes, headers_width.passes)
     print_result_column(error_color, ts.count.fails, headers_width.fails)
     print_result_column(error_color, ts.count.errors, headers_width.errors)
     print_result_column(warn_color, ts.count.broken, headers_width.broken)
