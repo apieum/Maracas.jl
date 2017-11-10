@@ -78,41 +78,22 @@ function print_test_errors(ts::MaracasTestSet)
     end
 end
 
-function header_width(header, total)
-    return total > 0 ? max(length(header), ndigits(total)) : 0
-end
 
 function print_test_results(ts::MaracasTestSet, depth_pad=0)
-    total_pass, total_fail, total_error, total_broken, total = tuple(ResultsCount(ts))
-    pass_width   = header_width("Pass", total_pass)
-    fail_width   = header_width("Fail", total_fail)
-    error_width  = header_width("Error", total_error)
-    broken_width = header_width("Broken", total_broken)
-    total_width  = header_width("Total", total)
-
+    results_count = ResultsCount(ts)
     align = max(get_alignment(ts, 0), length("Test Summary:"))
     # Print the outer test set header once
-    pad = total == 0 ? "" : " "
+    pad = total(results_count) == 0 ? "" : " "
     print_with_color(:white, rpad("Test Summary:",align-10," "), " |", pad; bold = true)
 
-    if pass_width > 0
-        print_with_color(:green, lpad("Pass",pass_width," "), "  "; bold = true)
-    end
-    if fail_width > 0
-        print_with_color(error_color(), lpad("Fail",fail_width," "), "  "; bold = true)
-    end
-    if error_width > 0
-        print_with_color(error_color(), lpad("Error",error_width," "), "  "; bold = true)
-    end
-    if broken_width > 0
-        print_with_color(Base.warn_color(), lpad("Broken",broken_width," "), "  "; bold = true)
-    end
-    if total_width > 0
-        print_with_color(Base.info_color(), lpad("Total",total_width, " "); bold = true)
-    end
+    print_passes_result(results_count)
+    print_fails_result(results_count)
+    print_errors_result(results_count)
+    print_broken_result(results_count)
+    print_total_result(results_count)
     println()
     # Recursively print a summary at every level
-    print_counts(ts, depth_pad, align, pass_width, fail_width, error_width, broken_width, total_width)
+    print_counts(ts, depth_pad, align, results_count, HeadersWidth(results_count))
 end
 
 
@@ -175,12 +156,31 @@ function filter_errors(ts::MaracasTestSet)
     end
     efs
 end
+
+hwidth(header, total) = total > 0 ? max(length(header), ndigits(total)) : 0
+
 type ResultsCount
     passes::Int
     fails::Int
     errors::Int
     broken::Int
 end
+type HeadersWidth
+    passes::Int
+    fails::Int
+    errors::Int
+    broken::Int
+    total::Int
+    function HeadersWidth(results::ResultsCount)
+        pass_width   = hwidth("Pass", results.passes)
+        fail_width   = hwidth("Fail", results.fails)
+        error_width  = hwidth("Error", results.errors)
+        broken_width = hwidth("Broken", results.broken)
+        total_width  = hwidth("Total", total(results))
+        new(pass_width, fail_width, error_width, broken_width, total_width)
+    end
+end
+
 total(count::ResultsCount) = count.passes + count.fails + count.errors + count.broken
 has_failed(count::ResultsCount) = (count.fails + count.errors > 0)
 +(a::ResultsCount, b::ResultsCount) = ResultsCount(a.passes + b.passes, a.fails + b.fails, a.errors + b.errors, a.broken + b.broken)
@@ -190,9 +190,6 @@ has_failed(count::ResultsCount) = (count.fails + count.errors > 0)
 +(a::ResultsCount, b::AbstractTestSet) = (a + ResultsCount(b))
 tuple(results_count::ResultsCount) = (results_count.passes, results_count.fails, results_count.errors, results_count.broken, total(results_count))
 
-# Recursive function that counts the number of test results of each
-# type directly in the testset, and totals across the child testsets
-
 function ResultsCount(ts::MaracasTestSet)
     results_count = ResultsCount(ts.n_passed, 0, 0, 0)
     for t in ts.results
@@ -200,6 +197,42 @@ function ResultsCount(ts::MaracasTestSet)
     end
     ts.anynonpass = has_failed(results_count)
     return results_count
+end
+passes_result(result::ResultsCount) = lpad("Pass", max(length("Pass"), ndigits(result.passes))," ")
+ResultsCount(ts) = nothing
+
+function print_passes_result(result::ResultsCount)
+    if result.passes > 0
+        print_with_color(:green, passes_result(result), "  "; bold = true)
+    end
+end
+
+fails_result(result::ResultsCount) = lpad("Fail", max(length("Fail"), ndigits(result.fails))," ")
+function print_fails_result(result::ResultsCount)
+    if result.fails > 0
+        print_with_color(error_color(), fails_result(result), "  "; bold = true)
+    end
+end
+
+errors_result(result::ResultsCount) = lpad("Error", max(length("Error"), ndigits(result.errors))," ")
+function print_errors_result(result::ResultsCount)
+    if result.errors > 0
+        print_with_color(error_color(), errors_result(result), "  "; bold = true)
+    end
+end
+
+broken_result(result::ResultsCount) = lpad("Broken", max(length("Broken"), ndigits(result.broken))," ")
+function print_broken_result(result::ResultsCount)
+    if result.broken > 0
+        print_with_color(Base.warn_color(), broken_result(result), "  "; bold = true)
+    end
+end
+
+total_result(result::ResultsCount) = lpad("Total", max(length("Total"), ndigits(total(result)))," ")
+function print_total_result(result::ResultsCount)
+    if total(result) > 0
+        print_with_color(Base.info_color(), total_result(result); bold = true)
+    end
 end
 
 function print_result_column(color, result, width)
@@ -211,37 +244,28 @@ function print_result_column(color, result, width)
 end
 # Recursive function that prints out the results at each level of
 # the tree of test sets
-function print_counts(ts::MaracasTestSet, depth, align,
-                      pass_width, fail_width, error_width, broken_width, total_width)
-    # Count results by each type at this level, and recursively
-    # through any child test sets
-    passes, fails, errors, broken, subtotal = tuple(ResultsCount(ts))
-    # Print test set header, with an alignment that ensures all
-    # the test results appear above each other
+function print_counts(ts::MaracasTestSet, depth, align, results_count::ResultsCount, headers_width)
+    passes, fails, errors, broken, subtotal = tuple(results_count)
+
     print(rpad(string("  "^depth, ts.description), align, " "), " | ")
 
-    print_result_column(:green, passes, pass_width)
-    print_result_column(error_color(), fails, fail_width)
-    print_result_column(error_color(), errors, error_width)
-    print_result_column(Base.warn_color(), broken, broken_width)
+    print_result_column(:green, passes, headers_width.passes)
+    print_result_column(error_color(), fails, headers_width.fails)
+    print_result_column(error_color(), errors, headers_width.errors)
+    print_result_column(Base.warn_color(), broken, headers_width.broken)
 
     if subtotal == 0
         print_with_color(Base.info_color(), "No tests")
     else
-        print_with_color(Base.info_color(), lpad(string(subtotal), total_width, " "))
+        print_with_color(Base.info_color(), lpad(string(subtotal), headers_width.total, " "))
     end
     println()
 
-    # Only print results at lower levels if we had failures
-    # if np + nb != subtotal
-        for t in ts.results
-            if isa(t, MaracasTestSet)
-                print_counts(t, depth + 1, align,
-                    pass_width, fail_width, error_width, broken_width, total_width)
-            end
-        end
-    # end
+    for t in ts.results
+        print_counts(t, depth + 1, align, ResultsCount(t), headers_width)
+    end
 end
+print_counts(args...) = nothing
 
 const default_color = Base.text_colors[:normal]
 function describe(fn::Function, text)
