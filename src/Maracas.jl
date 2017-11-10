@@ -123,17 +123,15 @@ function record(ts::MaracasTestSet, t::AbstractTestSet)
     push!(ts.results, t)
 end
 
-function print_test_errors(ts::MaracasTestSet)
-    for t in ts.results
-        if (isa(t, Error) || isa(t, Fail)) && myid() == 1
-            println("Error in testset $(ts.description):")
-            Base.show(STDOUT,t)
-            println()
-        elseif isa(t, MaracasTestSet)
-            print_test_errors(t)
-        end
+print_test_errors(ts::MaracasTestSet) = map(print_test_errors, ts.results)
+function print_test_errors(t::Union{Fail, Error})
+    if myid() == 1
+        println("Error in testset $(ts.description):")
+        Base.show(STDOUT,t)
+        println()
     end
 end
+print_test_errors(t) = nothing
 
 
 function print_test_results(ts::MaracasTestSet, depth_pad=0)
