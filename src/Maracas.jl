@@ -10,6 +10,7 @@ if VERSION < v"0.6"
 else
     error_color() = Base.error_color()
 end
+const default_color = Base.text_colors[:normal]
 
 # Backtrace utility functions
 function ip_matches_func_and_name(ip, func::Symbol, dir::String, file::String)
@@ -267,25 +268,28 @@ function print_counts(ts::MaracasTestSet, depth, align, results_count::ResultsCo
 end
 print_counts(args...) = nothing
 
-const default_color = Base.text_colors[:normal]
-function describe(fn::Function, text)
-    text = string(Base.text_colors[:yellow], Base.text_colors[:bold], text, default_color, )
-    @testset MaracasTestSet "$text" begin
-        fn()
+function maracas(tests, desc)
+    ts = MaracasTestSet(desc)
+    Base.Test.push_testset(ts)
+    try
+        tests()
+    catch err
+        record(ts, Error(:nontest_error, :(), err, catch_backtrace()))
     end
+    Base.Test.pop_testset()
+    finish(ts)
 end
-function it(fn::Function, text)
-    text = string(Base.text_colors[:cyan], Base.text_colors[:bold], "[Spec] ", default_color, "it ", text)
-    @testset MaracasTestSet "$text" begin
-        fn()
-    end
+function describe(tests::Function, desc)
+    desc = string(Base.text_colors[:yellow], Base.text_colors[:bold], desc, default_color, )
+    maracas(tests, desc)
 end
-function test(fn::Function, text)
-    text = string(Base.text_colors[:blue], Base.text_colors[:bold], "[Test] ", default_color, text)
-    @testset MaracasTestSet "$text" begin
-        fn()
-    end
+function it(tests::Function, desc)
+    desc = string(Base.text_colors[:cyan], Base.text_colors[:bold], "[Spec] ", default_color, "it ", desc)
+    maracas(tests, desc)
 end
-
+function test(tests::Function, desc)
+    desc = string(Base.text_colors[:blue], Base.text_colors[:bold], "[Test] ", default_color, desc)
+    maracas(tests, desc)
+end
 
 end
