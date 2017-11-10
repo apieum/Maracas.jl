@@ -1,10 +1,37 @@
 module Maracas
 export describe, test, it, @test, @test_throws
-# import Compat.Test.
-import Compat.Test: AbstractTestSet, record, finish, get_testset_depth, get_testset, Broken, Pass, Fail, Error
+import Compat.Test: AbstractTestSet, record, finish, get_testset_depth, get_testset, Broken, Pass, Fail, Error, TestSetException
+import Base.+
 using Compat.Test
 if VERSION < v"0.6"
     print_with_color(args...;kwargs...) = Base.print_with_color(args...)
+    TestSetException(pass::Int64, fail::Int64, error::Int64, broken::Int64, errors_and_fails::Array{Any,1}) = Base.Test.TestSetException(pass, fail, error, broken)
+    error_color() = :red
+else
+    error_color() = Base.error_color()
+end
+
+# Backtrace utility functions
+function ip_matches_func_and_name(ip, func::Symbol, dir::String, file::String)
+    for fr in StackTraces.lookup(ip)
+        if fr === StackTraces.UNKNOWN || fr.from_c
+            return false
+        end
+        path = string(fr.file)
+        fr.func == func && dirname(path) == dir && basename(path) == file && return true
+    end
+    return false
+end
+function scrub_backtrace(bt)
+    do_test_ind = findfirst(addr->ip_matches_func_and_name(addr, :do_test, ".", "test.jl"), bt)
+    if do_test_ind != 0 && length(bt) > do_test_ind
+        bt = bt[do_test_ind + 1:end]
+    end
+    name_ind = findfirst(addr->ip_matches_func_and_name(addr, Symbol("macro expansion"), ".", "test.jl"), bt)
+    if name_ind != 0 && length(bt) != 0
+        bt = bt[1:name_ind]
+    end
+    return bt
 end
 
 """
@@ -30,7 +57,7 @@ function record(ts::MaracasTestSet, t::Union{Fail, Error})
         print(t)
         # don't print the backtrace for Errors because it gets printed in the show
         # method
-        isa(t, Error) || Base.show_backtrace(STDOUT, Compat.Test.scrub_backtrace(backtrace()))
+        isa(t, Error) || Base.show_backtrace(STDOUT, scrub_backtrace(backtrace()))
         println()
     end
     push!(ts.results, t)
@@ -51,41 +78,31 @@ function print_test_errors(ts::MaracasTestSet)
     end
 end
 
+function header_width(header, total)
+    return total > 0 ? max(length(header), ndigits(total)) : 0
+end
+
 function print_test_results(ts::MaracasTestSet, depth_pad=0)
-    # Calculate the overall number for each type so each of
-    # the test result types are aligned
-    passes, fails, errors, broken, c_passes, c_fails, c_errors, c_broken = get_test_counts(ts)
-    total_pass   = passes + c_passes
-    total_fail   = fails  + c_fails
-    total_error  = errors + c_errors
-    total_broken = broken + c_broken
-    dig_pass   = total_pass   > 0 ? ndigits(total_pass)   : 0
-    dig_fail   = total_fail   > 0 ? ndigits(total_fail)   : 0
-    dig_error  = total_error  > 0 ? ndigits(total_error)  : 0
-    dig_broken = total_broken > 0 ? ndigits(total_broken) : 0
-    total = total_pass + total_fail + total_error + total_broken
-    dig_total = total > 0 ? ndigits(total) : 0
-    # For each category, take max of digits and header width if there are
-    # tests of that type
-    pass_width   = dig_pass   > 0 ? max(length("Pass"),   dig_pass)   : 0
-    fail_width   = dig_fail   > 0 ? max(length("Fail"),   dig_fail)   : 0
-    error_width  = dig_error  > 0 ? max(length("Error"),  dig_error)  : 0
-    broken_width = dig_broken > 0 ? max(length("Broken"), dig_broken) : 0
-    total_width  = dig_total  > 0 ? max(length("Total"),  dig_total)  : 0
-    # Calculate the alignment of the test result counts by
-    # recursively walking the tree of test sets
+    total_pass, total_fail, total_error, total_broken, total = tuple(ResultsCount(ts))
+    pass_width   = header_width("Pass", total_pass)
+    fail_width   = header_width("Fail", total_fail)
+    error_width  = header_width("Error", total_error)
+    broken_width = header_width("Broken", total_broken)
+    total_width  = header_width("Total", total)
+
     align = max(get_alignment(ts, 0), length("Test Summary:"))
     # Print the outer test set header once
     pad = total == 0 ? "" : " "
     print_with_color(:white, rpad("Test Summary:",align-10," "), " |", pad; bold = true)
+
     if pass_width > 0
         print_with_color(:green, lpad("Pass",pass_width," "), "  "; bold = true)
     end
     if fail_width > 0
-        print_with_color(Base.error_color(), lpad("Fail",fail_width," "), "  "; bold = true)
+        print_with_color(error_color(), lpad("Fail",fail_width," "), "  "; bold = true)
     end
     if error_width > 0
-        print_with_color(Base.error_color(), lpad("Error",error_width," "), "  "; bold = true)
+        print_with_color(error_color(), lpad("Error",error_width," "), "  "; bold = true)
     end
     if broken_width > 0
         print_with_color(Base.warn_color(), lpad("Broken",broken_width," "), "  "; bold = true)
@@ -112,12 +129,7 @@ function finish(ts::MaracasTestSet)
         record(parent_ts, ts)
         return ts
     end
-    passes, fails, errors, broken, c_passes, c_fails, c_errors, c_broken = get_test_counts(ts)
-    total_pass   = passes + c_passes
-    total_fail   = fails  + c_fails
-    total_error  = errors + c_errors
-    total_broken = broken + c_broken
-    total = total_pass + total_fail + total_error + total_broken
+    total_pass, total_fail, total_error, total_broken, total = tuple(ResultsCount(ts))
 
     if TESTSET_PRINT_ENABLE[]
         print_test_results(ts)
@@ -127,7 +139,7 @@ function finish(ts::MaracasTestSet)
     if total != total_pass + total_broken
         # Get all the error/failures and bring them along for the ride
         efs = filter_errors(ts)
-        throw(Compat.Test.TestSetException(total_pass,total_fail,total_error, total_broken, efs))
+        throw(TestSetException(total_pass,total_fail,total_error, total_broken, efs))
     end
 
     # return the testset so it is returned from the @testset macro
@@ -163,27 +175,33 @@ function filter_errors(ts::MaracasTestSet)
     end
     efs
 end
+type ResultsCount
+    passes::Int
+    fails::Int
+    errors::Int
+    broken::Int
+end
+total(count::ResultsCount) = count.passes + count.fails + count.errors + count.broken
+has_failed(count::ResultsCount) = (count.fails + count.errors > 0)
++(a::ResultsCount, b::ResultsCount) = ResultsCount(a.passes + b.passes, a.fails + b.fails, a.errors + b.errors, a.broken + b.broken)
++(a::ResultsCount, b::Fail) = ResultsCount(a.passes, a.fails + 1, a.errors, a.broken)
++(a::ResultsCount, b::Error) = ResultsCount(a.passes, a.fails, a.errors + 1, a.broken)
++(a::ResultsCount, b::Broken) = ResultsCount(a.passes, a.fails, a.errors, a.broken + 1)
++(a::ResultsCount, b::AbstractTestSet) = (a + ResultsCount(b))
+tuple(results_count::ResultsCount) = (results_count.passes, results_count.fails, results_count.errors, results_count.broken, total(results_count))
 
 # Recursive function that counts the number of test results of each
 # type directly in the testset, and totals across the child testsets
-function get_test_counts(ts::MaracasTestSet)
-    passes, fails, errors, broken = ts.n_passed, 0, 0, 0
-    c_passes, c_fails, c_errors, c_broken = 0, 0, 0, 0
+
+function ResultsCount(ts::MaracasTestSet)
+    results_count = ResultsCount(ts.n_passed, 0, 0, 0)
     for t in ts.results
-        isa(t, Fail)   && (fails  += 1)
-        isa(t, Error)  && (errors += 1)
-        isa(t, Broken) && (broken += 1)
-        if isa(t, MaracasTestSet)
-            np, nf, ne, nb, ncp, ncf, nce , ncb = get_test_counts(t)
-            c_passes += np + ncp
-            c_fails  += nf + ncf
-            c_errors += ne + nce
-            c_broken += nb + ncb
-        end
+        results_count += t
     end
-    ts.anynonpass = (fails + errors + c_fails + c_errors > 0)
-    return passes, fails, errors, broken, c_passes, c_fails, c_errors, c_broken
+    ts.anynonpass = has_failed(results_count)
+    return results_count
 end
+
 function print_result_column(color, result, width)
     if result > 0
         print_with_color(color, lpad(string(result), width, " "), "  ")
@@ -197,16 +215,15 @@ function print_counts(ts::MaracasTestSet, depth, align,
                       pass_width, fail_width, error_width, broken_width, total_width)
     # Count results by each type at this level, and recursively
     # through any child test sets
-    passes, fails, errors, broken, c_passes, c_fails, c_errors, c_broken = get_test_counts(ts)
-    subtotal = passes + fails + errors + broken + c_passes + c_fails + c_errors + c_broken
+    passes, fails, errors, broken, subtotal = tuple(ResultsCount(ts))
     # Print test set header, with an alignment that ensures all
     # the test results appear above each other
     print(rpad(string("  "^depth, ts.description), align, " "), " | ")
 
-    print_result_column(:green, passes + c_passes, pass_width)
-    print_result_column(Base.error_color(), fails + c_fails, fail_width)
-    print_result_column(Base.error_color(), errors + c_errors, error_width)
-    print_result_column(Base.warn_color(), broken + c_broken, broken_width)
+    print_result_column(:green, passes, pass_width)
+    print_result_column(error_color(), fails, fail_width)
+    print_result_column(error_color(), errors, error_width)
+    print_result_column(Base.warn_color(), broken, broken_width)
 
     if subtotal == 0
         print_with_color(Base.info_color(), "No tests")
