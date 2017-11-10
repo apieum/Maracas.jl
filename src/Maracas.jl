@@ -184,6 +184,13 @@ function get_test_counts(ts::MaracasTestSet)
     ts.anynonpass = (fails + errors + c_fails + c_errors > 0)
     return passes, fails, errors, broken, c_passes, c_fails, c_errors, c_broken
 end
+function print_result_column(color, result, width)
+    if result > 0
+        print_with_color(color, lpad(string(result), width, " "), "  ")
+    elseif width > 0
+        print(lpad(" ", width), "  ")
+    end
+end
 # Recursive function that prints out the results at each level of
 # the tree of test sets
 function print_counts(ts::MaracasTestSet, depth, align,
@@ -196,39 +203,12 @@ function print_counts(ts::MaracasTestSet, depth, align,
     # the test results appear above each other
     print(rpad(string("  "^depth, ts.description), align, " "), " | ")
 
-    np = passes + c_passes
-    if np > 0
-        print_with_color(:green, lpad(string(np), pass_width, " "), "  ")
-    elseif pass_width > 0
-        # No passes at this level, but some at another level
-        print(lpad(" ", pass_width), "  ")
-    end
+    print_result_column(:green, passes + c_passes, pass_width)
+    print_result_column(Base.error_color(), fails + c_fails, fail_width)
+    print_result_column(Base.error_color(), errors + c_errors, error_width)
+    print_result_column(Base.warn_color(), broken + c_broken, broken_width)
 
-    nf = fails + c_fails
-    if nf > 0
-        print_with_color(Base.error_color(), lpad(string(nf), fail_width, " "), "  ")
-    elseif fail_width > 0
-        # No fails at this level, but some at another level
-        print(lpad(" ", fail_width), "  ")
-    end
-
-    ne = errors + c_errors
-    if ne > 0
-        print_with_color(Base.error_color(), lpad(string(ne), error_width, " "), "  ")
-    elseif error_width > 0
-        # No errors at this level, but some at another level
-        print(lpad(" ", error_width), "  ")
-    end
-
-    nb = broken + c_broken
-    if nb > 0
-        print_with_color(Base.warn_color(), lpad(string(nb), broken_width, " "), "  ")
-    elseif broken_width > 0
-        # None broken at this level, but some at another level
-        print(lpad(" ", broken_width), "  ")
-    end
-
-    if np == 0 && nf == 0 && ne == 0 && nb == 0
+    if subtotal == 0
         print_with_color(Base.info_color(), "No tests")
     else
         print_with_color(Base.info_color(), lpad(string(subtotal), total_width, " "))
