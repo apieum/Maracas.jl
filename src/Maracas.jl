@@ -1,5 +1,7 @@
 module Maracas
-export describe, test, it, @test, @test_throws
+
+export @testset, @test, @test_throws, @test_broken, @test_skip, @test_warn, @test_nowarn
+export describe, test, it
 import Compat.Test: AbstractTestSet, record, finish, get_testset_depth, get_testset, Broken, Pass, Fail, Error, TestSetException
 import Base.+
 using Compat.Test
