@@ -42,9 +42,8 @@ type MaracasTestSet <: AbstractTestSet
     description::AbstractString
     results::Vector
     n_passed::Int
-    anynonpass::Bool
 end
-MaracasTestSet(desc) = MaracasTestSet(desc, [], 0, false)
+MaracasTestSet(desc) = MaracasTestSet(desc, [], 0)
 
 # For a broken result, simply store the result
 record(ts::MaracasTestSet, t::Broken) = (push!(ts.results, t); t)
@@ -183,7 +182,6 @@ type HeadersWidth
 end
 
 total(count::ResultsCount) = count.passes + count.fails + count.errors + count.broken
-has_failed(count::ResultsCount) = (count.fails + count.errors > 0)
 +(a::ResultsCount, b::ResultsCount) = ResultsCount(a.passes + b.passes, a.fails + b.fails, a.errors + b.errors, a.broken + b.broken)
 +(a::ResultsCount, b::Fail) = ResultsCount(a.passes, a.fails + 1, a.errors, a.broken)
 +(a::ResultsCount, b::Error) = ResultsCount(a.passes, a.fails, a.errors + 1, a.broken)
@@ -196,7 +194,6 @@ function ResultsCount(ts::MaracasTestSet)
     for t in ts.results
         results_count += t
     end
-    ts.anynonpass = has_failed(results_count)
     return results_count
 end
 passes_result(result::ResultsCount) = lpad("Pass", max(length("Pass"), ndigits(result.passes))," ")
