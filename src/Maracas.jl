@@ -89,8 +89,9 @@ type MaracasTestSet <: AbstractTestSet
     results::Vector
     count::ResultsCount
     max_width::Int
+    max_depth::Int
 end
-MaracasTestSet(desc) = MaracasTestSet(desc, [], ResultsCount(0, 0, 0, 0), length(desc))
+MaracasTestSet(desc) = MaracasTestSet(desc, [], ResultsCount(0, 0, 0, 0), length(desc), 0)
 ResultsCount(ts::MaracasTestSet) = ts.count
 
 # For a broken result, simply store the result
@@ -122,7 +123,8 @@ end
 
 function record(ts::MaracasTestSet, t::AbstractTestSet)
     ts.count += t;
-    ts.max_width = max(ts.max_width, t.max_width)
+    ts.max_depth = t.max_depth + 1
+    ts.max_width = max(ts.max_width, t.max_width + 2)
     push!(ts.results, t)
 end
 
@@ -137,8 +139,8 @@ end
 print_test_errors(t) = nothing
 
 
-function print_test_results(ts::MaracasTestSet, depth_pad=0)
-    align = max(get_alignment(ts, 0), length("Test Summary:"))
+function print_test_results(ts::MaracasTestSet)
+    align = max(2 * ts.max_depth + ts.max_width, length("Test Summary:")) - Int(round(header_margin/2))
     # Print the outer test set header once
     pad = total(ts.count) == 0 ? "" : " "
     print_with_color(:white, rpad("Test Summary:", align - header_margin, " "), " |", pad; bold = true)
@@ -150,7 +152,7 @@ function print_test_results(ts::MaracasTestSet, depth_pad=0)
     print_total_result(ts.count)
     println()
     # Recursively print a summary at every level
-    print_counts(ts, depth_pad, align, HeadersWidth(ts.count))
+    print_counts(ts, 0, align, HeadersWidth(ts.count))
 end
 
 
@@ -167,7 +169,7 @@ function finish(ts::MaracasTestSet)
         record(parent_ts, ts)
         return ts
     end
-    total_pass, total_fail, total_error, total_broken, total = tuple(ResultsCount(ts))
+    total_pass, total_fail, total_error, total_broken, total = tuple(ts.count)
 
     if TESTSET_PRINT_ENABLE[]
         print_test_results(ts)
@@ -184,21 +186,6 @@ function finish(ts::MaracasTestSet)
     ts
 end
 
-# Recursive function that finds the column that the result counts
-# can begin at by taking into account the width of the descriptions
-# and the amount of indentation. If a test set had no failures, and
-# no failures in child test sets, there is no need to include those
-# in calculating the alignment
-function get_alignment(ts::MaracasTestSet, depth::Int)
-    # The minimum width at this depth is
-    ts_width = 2*depth + length(ts.description)
-    # Return the maximum of this width and the minimum width
-    # for all children (if they exist)
-    isempty(ts.results) && return ts_width
-    child_widths = map(t->get_alignment(t, depth+1), ts.results)
-    return max(ts_width, maximum(child_widths))
-end
-get_alignment(ts, depth::Int) = 0
 
 # Recursive function that fetches backtraces for any and all errors
 # or failures the testset and its children encountered
