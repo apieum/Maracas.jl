@@ -1,27 +1,28 @@
 module Maracas
 
 export @testset, @test, @test_throws, @test_broken, @test_skip, @test_warn, @test_nowarn
-export describe, test, it
+export describe, test, it, MARACAS_SETTING
 import Compat.Test: AbstractTestSet, record, finish, get_testset_depth, get_testset, Broken, Pass, Fail, Error, TestSetException
 import Base.+
 using Compat.Test
+const MARACAS_SETTING = Dict(
+    "error" => Symbol(get(ENV, "MARARAS_ERROR", :red)),
+    "warn" =>  Symbol(get(ENV, "MARARAS_WARN", :yellow)),
+    "pass" =>  Symbol(get(ENV, "MARARAS_PASS", :green)),
+    "info" =>  Symbol(get(ENV, "MARARAS_INFO", :blue)),
+    "default" => Base.text_colors[Symbol(get(ENV, "MARARAS_DEFAULT", :normal))],
+    "bold" => Base.text_colors[Symbol(get(ENV, "MARARAS_BOLD", :bold))],
+    "margin" => UInt(get(ENV, "MARARAS_MARGIN", 10)),
+    "title" =>  Base.text_colors[Symbol(get(ENV, "MARARAS_TITLE", :yellow))],
+    "spec" =>  Base.text_colors[Symbol(get(ENV, "MARARAS_SPEC", :cyan))],
+    "test" =>  Base.text_colors[Symbol(get(ENV, "MARARAS_TEST", :blue))],
+
+)
 if VERSION < v"0.6"
     print_with_color(args...;kwargs...) = Base.print_with_color(args...)
     TestSetException(pass::Int64, fail::Int64, error::Int64, broken::Int64, errors_and_fails::Array{Any,1}) = Base.Test.TestSetException(pass, fail, error, broken)
-    const error_color = :red
-    const info_color = Base.info_color()
-    const header_margin = 13
-    const warn_color = :yellow
-else
-    const error_color = Base.error_color()
-    const info_color = :blue
-    const warn_color = Base.warn_color()
-    const header_margin = 10
+    MARACAS_SETTING["margin"] += 3
 end
-const pass_color = :green
-const default_color = Base.text_colors[:normal]
-const text_bold = Base.text_colors[:bold]
-
 
 hwidth(header, total) = total > 0 ? max(length(header), ndigits(total)) : 0
 
@@ -61,7 +62,7 @@ tuple(results_count::ResultsCount) = (results_count.passes, results_count.fails,
 
 ResultsCount(ts) = nothing
 
-# Backtrace utility functions
+# Backtrace utility functions copied from test.jl because VERSION < v"0.6" haven't it
 function ip_matches_func_and_name(ip, func::Symbol, dir::String, file::String)
     for fr in StackTraces.lookup(ip)
         if fr === StackTraces.UNKNOWN || fr.from_c
@@ -72,6 +73,7 @@ function ip_matches_func_and_name(ip, func::Symbol, dir::String, file::String)
     end
     return false
 end
+
 function scrub_backtrace(bt)
     do_test_ind = findfirst(addr->ip_matches_func_and_name(addr, :do_test, ".", "test.jl"), bt)
     if do_test_ind != 0 && length(bt) > do_test_ind
@@ -149,16 +151,16 @@ end
 
 
 function print_test_results(ts::MaracasTestSet)
-    align = max(2 * ts.max_depth + ts.max_width, length("Test Summary:")) - Int(round(header_margin/2))
+    align = max(2 * ts.max_depth + ts.max_width, length("Test Summary:")) - Int(round(MARACAS_SETTING["margin"]/2))
     # Print the outer test set header once
     pad = total(ts.count) == 0 ? "" : " "
-    print_with_color(:bold, rpad("Test Summary:", align - header_margin, " "), "$default_color |", pad; bold = true)
+    print_with_color(:bold, rpad("Test Summary:", align - MARACAS_SETTING["margin"], " "), "$(MARACAS_SETTING["default"]) |", pad; bold = true)
 
-    print_result(pass_color, "Pass", passes(ts.count))
-    print_result(error_color, "Fail", fails(ts.count))
-    print_result(error_color, "Error", errors(ts.count))
-    print_result(warn_color, "Broken", broken(ts.count))
-    print_result(info_color, "Total", total(ts.count))
+    print_result(MARACAS_SETTING["pass"], "Pass", passes(ts.count))
+    print_result(MARACAS_SETTING["error"], "Fail", fails(ts.count))
+    print_result(MARACAS_SETTING["error"], "Error", errors(ts.count))
+    print_result(MARACAS_SETTING["warn"], "Broken", broken(ts.count))
+    print_result(MARACAS_SETTING["info"], "Total", total(ts.count))
     println()
     # Recursively print a summary at every level
     print_counts(ts, 0, align, HeadersWidth(ts.count))
@@ -222,16 +224,16 @@ end
 # the tree of test sets
 function print_counts(ts::MaracasTestSet, depth, align, headers_width)
     print(rpad(string("  "^depth, ts.description), align, " "), " | ")
-    print_result_column(pass_color, ts.count.passes, headers_width.passes)
-    print_result_column(error_color, ts.count.fails, headers_width.fails)
-    print_result_column(error_color, ts.count.errors, headers_width.errors)
-    print_result_column(warn_color, ts.count.broken, headers_width.broken)
+    print_result_column(MARACAS_SETTING["pass"], ts.count.passes, headers_width.passes)
+    print_result_column(MARACAS_SETTING["error"], ts.count.fails, headers_width.fails)
+    print_result_column(MARACAS_SETTING["error"], ts.count.errors, headers_width.errors)
+    print_result_column(MARACAS_SETTING["warn"], ts.count.broken, headers_width.broken)
 
     subtotal = total(ts.count)
     if subtotal == 0
-        print_with_color(info_color, "No tests")
+        print_with_color(MARACAS_SETTING["info"], "No tests")
     else
-        print_with_color(info_color, lpad(string(subtotal), headers_width.total, " "); bold = true)
+        print_with_color(MARACAS_SETTING["info"], lpad(string(subtotal), headers_width.total, " "); bold = true)
     end
     println()
 
@@ -253,15 +255,15 @@ function maracas(tests, desc)
     finish(ts)
 end
 function describe(tests::Function, desc)
-    desc = string(Base.text_colors[:yellow], text_bold, desc, default_color, )
+    desc = string(MARACAS_SETTING["title"], MARACAS_SETTING["bold"], desc, MARACAS_SETTING["default"], )
     maracas(tests, desc)
 end
 function it(tests::Function, desc)
-    desc = string(Base.text_colors[:cyan], text_bold, "[Spec] ", default_color, "it ", desc)
+    desc = string(MARACAS_SETTING["spec"], MARACAS_SETTING["bold"], "[Spec] ", MARACAS_SETTING["default"], "it ", desc)
     maracas(tests, desc)
 end
 function test(tests::Function, desc)
-    desc = string(Base.text_colors[:blue], text_bold, "[Test] ", default_color, desc)
+    desc = string(MARACAS_SETTING["test"], MARACAS_SETTING["bold"], "[Test] ", MARACAS_SETTING["default"], desc)
     maracas(tests, desc)
 end
 
