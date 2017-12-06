@@ -66,3 +66,5 @@ import Maracas.AbstractTestSet
 
     end
 end
+
+include("doc_examples.jl")
