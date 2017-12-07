@@ -13,7 +13,7 @@ const MARACAS_SETTING = Dict(
     :info =>  Symbol(get(ENV, "MARACAS_INFO", :blue)),
     :default => Base.text_colors[:normal],
     :bold => Base.text_colors[Symbol(get(ENV, "MARACAS_BOLD", :bold))],
-    :padding => 10,
+    :title_length => 80,
     :test =>  "",
     :title =>  "",
     :spec =>  "",
@@ -38,7 +38,6 @@ set_info_color(color::Symbol) = (MARACAS_SETTING[:info] = color)
 if VERSION < v"0.6"
     print_with_color(args...;kwargs...) = Base.print_with_color(args...)
     TestSetException(pass::Int64, fail::Int64, error::Int64, broken::Int64, errors_and_fails::Array{Any,1}) = Base.Test.TestSetException(pass, fail, error, broken)
-    MARACAS_SETTING[:padding] += 3
 end
 
 function maracas(tests, desc)

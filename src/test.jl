@@ -1,7 +1,10 @@
 import Compat.Test: AbstractTestSet, record, finish, get_testset_depth, get_testset, Broken, Pass, Fail, Error, TestSetException
 import Base.+
 
-hwidth(header, total) = total > 0 ? max(length(header), ndigits(total)) : 0
+if VERSION <= v"0.6"
+    textwidth = strwidth
+end
+hwidth(header, total) = total > 0 ? 8 : 0
 
 type ResultsCount
     passes::Int
@@ -21,6 +24,9 @@ type HeadersWidth
         error_width  = hwidth("Error", results.errors)
         broken_width = hwidth("Broken", results.broken)
         total_width  = hwidth("Total", total(results))
+        if total_width == 0
+            total_width = textwidth("No Tests")
+        end
         new(pass_width, fail_width, error_width, broken_width, total_width)
     end
 end
@@ -118,27 +124,22 @@ function print_test_errors(t::Union{Fail, Error})
 end
 print_test_errors(t) = nothing
 
-function print_result(color::Symbol, title::AbstractString, result::Int)
-    if result > 0
-        print_with_color(color, lpad(title, max(length(title), ndigits(result))," "), "  "; bold = true)
-    end
+function print_col_header(color::Symbol, title::AbstractString, result::Int)
+    result == 0 && return
+    print_with_color(color, lpad(title, 8); bold = true)
 end
 
 
 function print_test_results(ts::MaracasTestSet)
-    align = max(2 * ts.max_depth + ts.max_width, length("Test Summary:")) + Int(round(MARACAS_SETTING[:padding]/2))
-    # Print the outer test set header once
-    pad = total(ts.count) == 0 ? "" : " "
-    print_with_color(:bold, rpad("Test Summary:", align - MARACAS_SETTING[:padding], " "), "$(MARACAS_SETTING[:default]) |", pad; bold=true)
-
-    print_result(MARACAS_SETTING[:pass], "Pass", passes(ts.count))
-    print_result(MARACAS_SETTING[:error], "Fail", fails(ts.count))
-    print_result(MARACAS_SETTING[:error], "Error", errors(ts.count))
-    print_result(MARACAS_SETTING[:warn], "Broken", broken(ts.count))
-    print_result(MARACAS_SETTING[:info], "Total", total(ts.count))
+    print_summary()
+    print_col_header(MARACAS_SETTING[:pass], "Pass", passes(ts.count))
+    print_col_header(MARACAS_SETTING[:error], "Fail", fails(ts.count))
+    print_col_header(MARACAS_SETTING[:error], "Error", errors(ts.count))
+    print_col_header(MARACAS_SETTING[:warn], "Broken", broken(ts.count))
+    print_col_header(MARACAS_SETTING[:info], "Total", total(ts.count))
     println()
     # Recursively print a summary at every level
-    print_counts(ts, 0, align, HeadersWidth(ts.count))
+    print_counts(ts, 0, HeadersWidth(ts.count))
 end
 
 
@@ -197,23 +198,35 @@ function print_result_column(color, result, width)
 end
 # Recursive function that prints out the results at each level of
 # the tree of test sets
-function print_counts(ts::MaracasTestSet, depth, align, headers_width)
-    print(rpad(string("  "^depth, ts.description), align, " "), " | ")
+function print_counts(ts::MaracasTestSet, depth, headers_width)
+    print_header(ts.description, depth)
     print_result_column(MARACAS_SETTING[:pass], ts.count.passes, headers_width.passes)
     print_result_column(MARACAS_SETTING[:error], ts.count.fails, headers_width.fails)
     print_result_column(MARACAS_SETTING[:error], ts.count.errors, headers_width.errors)
     print_result_column(MARACAS_SETTING[:warn], ts.count.broken, headers_width.broken)
 
     subtotal = total(ts.count)
-    if subtotal == 0
-        print_with_color(MARACAS_SETTING[:info], "No tests")
-    else
-        print_with_color(MARACAS_SETTING[:info], lpad(string(subtotal), headers_width.total, " "); bold = true)
-    end
+    result = subtotal == 0 ? "No tests" : string(subtotal)
+    print_with_color(MARACAS_SETTING[:info], lpad(result, headers_width.total, " "); bold = true)
     println()
 
     for t in ts.results
-        print_counts(t, depth + 1, align, headers_width)
+        print_counts(t, depth + 1, headers_width)
     end
 end
 print_counts(args...) = nothing
+
+function justify_header(text)
+    index = 3*(length(text) - textwidth(text) -3)
+    return rpad(text, MARACAS_SETTING[:title_length]+index)
+end
+
+function print_summary()
+    text = justify_header("$(MARACAS_SETTING[:bold])Test Summary:")
+    print(text[1:end-1], "$(MARACAS_SETTING[:default])|")
+end
+
+function print_header(text, depth=0)
+    text = justify_header(string("  "^depth, text))
+    print(text, "$(MARACAS_SETTING[:default])|")
+end
