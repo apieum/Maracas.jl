@@ -14,15 +14,15 @@ import Maracas.AbstractTestSet
 
     @testset "'describe' TestSet description is colored within 'title' env var" begin
         ts = describe(()->nothing, "description")
-        @test contains(ts.description, MARACAS_SETTING["title"])
+        @test contains(ts.description, MARACAS_SETTING[:title])
     end
 
-    @testset "'describe' TestSet description color can be changed with env var" begin
-        title_color = MARACAS_SETTING["title"]
-        MARACAS_SETTING["title"] = Base.text_colors[:blue]
+    @testset "'describe' TestSet description color can be changed" begin
+        title_color = MARACAS_SETTING[:title]
+        set_title_style(:blue)
         ts = describe(()->nothing, "description")
         @test contains(ts.description, Base.text_colors[:blue])
-        MARACAS_SETTING["title"] = title_color
+        MARACAS_SETTING[:title] = title_color
     end
 
     @testset "'it' returns a TestSet" begin
@@ -42,7 +42,7 @@ import Maracas.AbstractTestSet
 
     @testset "'it' TestSet description is colored within 'spec' env var" begin
         ts = it(()->nothing, "description")
-        @test contains(ts.description, MARACAS_SETTING["spec"])
+        @test contains(ts.description, MARACAS_SETTING[:spec])
     end
 
     @testset "'test' returns a TestSet" begin
@@ -62,7 +62,7 @@ import Maracas.AbstractTestSet
 
     @testset "'test' TestSet description is colored within 'test' env var" begin
         ts = test(()->nothing, "description")
-        @test contains(ts.description, MARACAS_SETTING["test"])
+        @test contains(ts.description, MARACAS_SETTING[:test])
 
     end
 end

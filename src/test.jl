@@ -128,16 +128,16 @@ end
 
 
 function print_test_results(ts::MaracasTestSet)
-    align = max(2 * ts.max_depth + ts.max_width, length("Test Summary:")) - Int(round(MARACAS_SETTING["margin"]/2))
+    align = max(2 * ts.max_depth + ts.max_width, length("Test Summary:")) + Int(round(MARACAS_SETTING[:padding]/2))
     # Print the outer test set header once
     pad = total(ts.count) == 0 ? "" : " "
-    print_with_color(:bold, rpad("Test Summary:", align - MARACAS_SETTING["margin"], " "), "$(MARACAS_SETTING["default"]) |", pad; bold = true)
+    print_with_color(:bold, rpad("Test Summary:", align - MARACAS_SETTING[:padding], " "), "$(MARACAS_SETTING[:default]) |", pad; bold=true)
 
-    print_result(MARACAS_SETTING["pass"], "Pass", passes(ts.count))
-    print_result(MARACAS_SETTING["error"], "Fail", fails(ts.count))
-    print_result(MARACAS_SETTING["error"], "Error", errors(ts.count))
-    print_result(MARACAS_SETTING["warn"], "Broken", broken(ts.count))
-    print_result(MARACAS_SETTING["info"], "Total", total(ts.count))
+    print_result(MARACAS_SETTING[:pass], "Pass", passes(ts.count))
+    print_result(MARACAS_SETTING[:error], "Fail", fails(ts.count))
+    print_result(MARACAS_SETTING[:error], "Error", errors(ts.count))
+    print_result(MARACAS_SETTING[:warn], "Broken", broken(ts.count))
+    print_result(MARACAS_SETTING[:info], "Total", total(ts.count))
     println()
     # Recursively print a summary at every level
     print_counts(ts, 0, align, HeadersWidth(ts.count))
@@ -201,16 +201,16 @@ end
 # the tree of test sets
 function print_counts(ts::MaracasTestSet, depth, align, headers_width)
     print(rpad(string("  "^depth, ts.description), align, " "), " | ")
-    print_result_column(MARACAS_SETTING["pass"], ts.count.passes, headers_width.passes)
-    print_result_column(MARACAS_SETTING["error"], ts.count.fails, headers_width.fails)
-    print_result_column(MARACAS_SETTING["error"], ts.count.errors, headers_width.errors)
-    print_result_column(MARACAS_SETTING["warn"], ts.count.broken, headers_width.broken)
+    print_result_column(MARACAS_SETTING[:pass], ts.count.passes, headers_width.passes)
+    print_result_column(MARACAS_SETTING[:error], ts.count.fails, headers_width.fails)
+    print_result_column(MARACAS_SETTING[:error], ts.count.errors, headers_width.errors)
+    print_result_column(MARACAS_SETTING[:warn], ts.count.broken, headers_width.broken)
 
     subtotal = total(ts.count)
     if subtotal == 0
-        print_with_color(MARACAS_SETTING["info"], "No tests")
+        print_with_color(MARACAS_SETTING[:info], "No tests")
     else
-        print_with_color(MARACAS_SETTING["info"], lpad(string(subtotal), headers_width.total, " "); bold = true)
+        print_with_color(MARACAS_SETTING[:info], lpad(string(subtotal), headers_width.total, " "); bold = true)
     end
     println()
 
