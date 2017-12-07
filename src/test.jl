@@ -70,10 +70,9 @@ type MaracasTestSet <: AbstractTestSet
     description::AbstractString
     results::Vector
     count::ResultsCount
-    max_width::Int
     max_depth::Int
 end
-MaracasTestSet(desc) = MaracasTestSet(desc, [], ResultsCount(0, 0, 0, 0), length(desc), 0)
+MaracasTestSet(desc) = MaracasTestSet(desc, [], ResultsCount(0, 0, 0, 0), 0)
 ResultsCount(ts::MaracasTestSet) = ts.count
 
 # For a broken result, simply store the result
@@ -103,10 +102,9 @@ function record(ts::MaracasTestSet, t::Union{Fail, Error})
     t, isa(t, Error) || backtrace()
 end
 
-function record(ts::MaracasTestSet, t::AbstractTestSet)
+function record(ts::MaracasTestSet, t::MaracasTestSet)
     ts.count += t;
     ts.max_depth = t.max_depth + 1
-    ts.max_width = max(ts.max_width, t.max_width + 2)
     push!(ts.results, t)
 end
 
