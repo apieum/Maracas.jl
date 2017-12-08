@@ -1,6 +1,6 @@
 using Maracas
 using Base.Test
-import Maracas.AbstractTestSet
+import Maracas: AbstractTestSet, rm_spec_char, rpad_title
 @testset "Maracas" begin
     @testset "'describe' returns a TestSet" begin
         @test isa(describe(()->nothing, "description"), AbstractTestSet)
@@ -63,6 +63,22 @@ import Maracas.AbstractTestSet
     @testset "'test' TestSet description is colored within 'test' env var" begin
         ts = test(()->nothing, "description")
         @test contains(ts.description, MARACAS_SETTING[:test])
+    end
+
+    @testset "padding results and descriptions" begin
+        @testset "remove special chars returns empty string when special char is given" begin
+            @test rm_spec_char(MARACAS_SETTING[:spec]) == ""
+        end
+        @testset "remove special chars returns a string with special chars removed" begin
+            given = string("maracas : ", MARACAS_SETTING[:spec], "do tchik tchik tchik")
+            expected = "maracas : do tchik tchik tchik"
+            @test rm_spec_char(given) == expected
+        end
+        @testset "rpad_title of a special char returns :title_length spaces" begin
+            given = MARACAS_SETTING[:test]
+            expected = " "^MARACAS_SETTING[:title_length]
+            @test rm_spec_char(rpad_title(given)) == expected
+        end
 
     end
 end

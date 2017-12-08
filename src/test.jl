@@ -199,7 +199,7 @@ end
 # Recursive function that prints out the results at each level of
 # the tree of test sets
 function print_counts(ts::MaracasTestSet, depth, headers_width)
-    print_header(ts.description, depth)
+    print_title(ts.description, depth)
     print_result_column(MARACAS_SETTING[:pass], ts.count.passes, headers_width.passes)
     print_result_column(MARACAS_SETTING[:error], ts.count.fails, headers_width.fails)
     print_result_column(MARACAS_SETTING[:error], ts.count.errors, headers_width.errors)
@@ -216,17 +216,8 @@ function print_counts(ts::MaracasTestSet, depth, headers_width)
 end
 print_counts(args...) = nothing
 
-function justify_header(text)
-    index = 3*(length(text) - textwidth(text) -3)
-    return rpad(text, MARACAS_SETTING[:title_length]+index)
-end
+rm_spec_char(text) = replace(text, r"\e\[[0-9;]+m" , "")
+rpad_title(text) = string(text, " "^(MARACAS_SETTING[:title_length] - textwidth(rm_spec_char(text))))
 
-function print_summary()
-    text = justify_header("$(MARACAS_SETTING[:bold])Test Summary:")
-    print(text[1:end-1], "$(MARACAS_SETTING[:default])|")
-end
-
-function print_header(text, depth=0)
-    text = justify_header(string("  "^depth, text))
-    print(text, "$(MARACAS_SETTING[:default])|")
-end
+print_title(text, depth=0) = print(rpad_title(string("  "^depth, text)), "$(MARACAS_SETTING[:default])|")
+print_summary() = print_title("$(MARACAS_SETTING[:bold])Test Summary:")
