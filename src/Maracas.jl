@@ -26,15 +26,15 @@ function set_text_style(key::Symbol, color::Symbol, style::Symbol=:bold)
     MARACAS_SETTING[key] = string(Base.text_colors[style], Base.text_colors[color])
 end
 
-const ShellColor = Union{Symbol, UInt8}
+const TextColor = Union{Symbol, UInt8}
 
-set_test_style(color::ShellColor, bold::Bool=true) = set_text_style(:test, color, bold ? :bold : :normal)
-set_title_style(color::ShellColor, bold::Bool=true) = set_text_style(:title, color, bold ? :bold : :normal)
-set_spec_style(color::ShellColor, bold::Bool=true) = set_text_style(:spec, color, bold ? :bold : :normal)
-set_error_color(color::ShellColor) = (MARACAS_SETTING[:error] = color)
-set_warn_color(color::ShellColor) = (MARACAS_SETTING[:warn] = color)
-set_pass_color(color::ShellColor) = (MARACAS_SETTING[:pass] = color)
-set_info_color(color::ShellColor) = (MARACAS_SETTING[:info] = color)
+set_test_style(color::TextColor, bold::Bool=true) = set_text_style(:test, color, bold ? :bold : :normal)
+set_title_style(color::TextColor, bold::Bool=true) = set_text_style(:title, color, bold ? :bold : :normal)
+set_spec_style(color::TextColor, bold::Bool=true) = set_text_style(:spec, color, bold ? :bold : :normal)
+set_error_color(color::TextColor) = (MARACAS_SETTING[:error] = color)
+set_warn_color(color::TextColor) = (MARACAS_SETTING[:warn] = color)
+set_pass_color(color::TextColor) = (MARACAS_SETTING[:pass] = color)
+set_info_color(color::TextColor) = (MARACAS_SETTING[:info] = color)
 
 if VERSION < v"0.6"
     print_with_color(args...;kwargs...) = Base.print_with_color(args...)
