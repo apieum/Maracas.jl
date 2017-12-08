@@ -1,9 +1,6 @@
 import Compat.Test: AbstractTestSet, record, finish, get_testset_depth, get_testset, Broken, Pass, Fail, Error, TestSetException
 import Base.+
 
-if VERSION <= v"0.6"
-    textwidth = strwidth
-end
 hwidth(header, total) = total > 0 ? 8 : 0
 
 type ResultsCount
@@ -25,7 +22,7 @@ type HeadersWidth
         broken_width = hwidth("Broken", results.broken)
         total_width  = hwidth("Total", total(results))
         if total_width == 0
-            total_width = textwidth("No Tests")
+            total_width = length("No Tests")
         end
         new(pass_width, fail_width, error_width, broken_width, total_width)
     end
@@ -217,7 +214,7 @@ end
 print_counts(args...) = nothing
 
 rm_spec_char(text) = replace(text, r"\e\[[0-9;]+m" , "")
-rpad_title(text) = string(text, " "^(MARACAS_SETTING[:title_length] - textwidth(rm_spec_char(text))))
+rpad_title(text) = string(text, " "^(MARACAS_SETTING[:title_length] - length(rm_spec_char(text))))
 
 print_title(text, depth=0) = print(rpad_title(string("  "^depth, text)), "$(MARACAS_SETTING[:default])|")
 print_summary() = print_title("$(MARACAS_SETTING[:bold])Test Summary:")
