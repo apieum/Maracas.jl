@@ -214,7 +214,11 @@ end
 print_counts(args...) = nothing
 
 rm_spec_char(text) = replace(text, r"\e\[[0-9;]+m" , "")
-rpad_title(text) = string(text, " "^(MARACAS_SETTING[:title_length] - length(rm_spec_char(text))))
+caesura(text, quantity) = string(text[1:(end + quantity - 4)], Base.text_colors[:red], "... ")
+function rpad_title(text)
+    space_repeat = MARACAS_SETTING[:title_length] - length(rm_spec_char(text))
+    return space_repeat > 0 ? string(text, " "^space_repeat) : caesura(text, space_repeat)
+end
 
 print_title(text, depth=0) = print(rpad_title(string("  "^depth, text)), "$(MARACAS_SETTING[:default])|")
 print_summary() = print_title("$(MARACAS_SETTING[:bold])Test Summary:")

@@ -79,6 +79,14 @@ import Maracas: AbstractTestSet, rm_spec_char, rpad_title
             expected = " "^MARACAS_SETTING[:title_length]
             @test rm_spec_char(rpad_title(given)) == expected
         end
+        @testset "test title is cut when too long" begin
+            given = "-"^(MARACAS_SETTING[:title_length] + 10)
+            @test length(rm_spec_char(rpad_title(given))) == MARACAS_SETTING[:title_length]
+        end
+        @testset "test title end is replaced with ellipsis when too long" begin
+            given = "-"^(MARACAS_SETTING[:title_length] + 10)
+            @test rpad_title(given)[end-3:end-1] == "..."
+        end
 
     end
 end
