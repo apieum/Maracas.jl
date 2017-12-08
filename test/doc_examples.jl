@@ -2,7 +2,7 @@ using Maracas
 # 'describe', 'it' and 'test' return a MaracasTestSet <: Base.Test.AbstractTestSet
 is_a_spec(ts::Base.Test.AbstractTestSet)=contains(ts.description, "[Spec]")
 is_a_test(ts::Base.Test.AbstractTestSet)=contains(ts.description, "[Test]")
-is_yellow(ts::Base.Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:yellow])
+is_magenta(ts::Base.Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:magenta])
 is_blue(ts::Base.Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:blue])
 is_cyan(ts::Base.Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:cyan])
 
@@ -16,9 +16,9 @@ describe("it is a test suite") do
         @test is_a_test(a_test)
     end
 
-    test("test suite title is yellow by default") do
+    test("test suite title is magenta by default") do
         nested_describe = describe(()->nothing, "you can document your code with your tests")
-        @test is_yellow(nested_describe)
+        @test is_magenta(nested_describe)
     end
 
     test("spec title is cyan by default") do

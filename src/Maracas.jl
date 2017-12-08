@@ -19,7 +19,7 @@ const MARACAS_SETTING = Dict(
     :spec =>  "",
 )
 MARACAS_SETTING[:test] =  get(ENV, "MARACAS_TEST", string(Base.text_colors[:blue], MARACAS_SETTING[:bold]))
-MARACAS_SETTING[:title] =  get(ENV, "MARACAS_TITLE", string(Base.text_colors[:yellow], MARACAS_SETTING[:bold]))
+MARACAS_SETTING[:title] =  get(ENV, "MARACAS_TITLE", string(Base.text_colors[:magenta], MARACAS_SETTING[:bold]))
 MARACAS_SETTING[:spec] =  get(ENV, "MARACAS_SPEC", string(Base.text_colors[:cyan], MARACAS_SETTING[:bold]))
 
 function set_text_style(key::Symbol, color::Symbol, style::Symbol=:bold)
