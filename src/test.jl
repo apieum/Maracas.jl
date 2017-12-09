@@ -1,36 +1,13 @@
 import Compat.Test: AbstractTestSet, record, finish, get_testset_depth, get_testset, Broken, Pass, Fail, Error, TestSetException
 import Base.+
 
-hwidth(header, total) = total > 0 ? 8 : 0
-
 type ResultsCount
     passes::Int
     fails::Int
     errors::Int
     broken::Int
 end
-type HeadersWidth
-    passes::Int
-    fails::Int
-    errors::Int
-    broken::Int
-    total::Int
-    function HeadersWidth(results::ResultsCount)
-        pass_width   = hwidth("Pass", results.passes)
-        fail_width   = hwidth("Fail", results.fails)
-        error_width  = hwidth("Error", results.errors)
-        broken_width = hwidth("Broken", results.broken)
-        total_width  = hwidth("Total", total(results))
-        if total_width == 0
-            total_width = length("No Tests")
-        end
-        new(pass_width, fail_width, error_width, broken_width, total_width)
-    end
-end
-passes(count::ResultsCount) = count.passes
-fails(count::ResultsCount)  = count.fails
-errors(count::ResultsCount) = count.errors
-broken(count::ResultsCount) = count.broken
+ResultsCount(ts) = ResultsCount(0, 0, 0, 0)
 total(count::ResultsCount)  = count.passes + count.fails + count.errors + count.broken
 +(a::ResultsCount, b::ResultsCount) = ResultsCount(a.passes + b.passes, a.fails + b.fails, a.errors + b.errors, a.broken + b.broken)
 +(a::ResultsCount, b::Pass) = ResultsCount(a.passes + 1, a.fails, a.errors, a.broken)
@@ -38,10 +15,12 @@ total(count::ResultsCount)  = count.passes + count.fails + count.errors + count.
 +(a::ResultsCount, b::Error) = ResultsCount(a.passes, a.fails, a.errors + 1, a.broken)
 +(a::ResultsCount, b::Broken) = ResultsCount(a.passes, a.fails, a.errors, a.broken + 1)
 +(a::ResultsCount, b::AbstractTestSet) = (a + ResultsCount(b))
-tuple(results_count::ResultsCount) = (results_count.passes, results_count.fails, results_count.errors, results_count.broken, total(results_count))
 
-ResultsCount(ts) = nothing
-
+passes(count::Dict) = get(count, :passes, 0)
+fails(count::Dict)  = get(count, :fails, 0)
+errors(count::Dict) = get(count, :errors, 0)
+broken(count::Dict) = get(count, :broken, 0)
+total(count::Dict)  = passes(count) + fails(count) + errors(count) + broken(count)
 # Backtrace utility functions copied from test.jl because VERSION < v"0.6" haven't it
 function ip_matches_func_and_name(ip, func::Symbol, dir::String, file::String)
     for fr in StackTraces.lookup(ip)
@@ -77,6 +56,24 @@ type MaracasTestSet <: AbstractTestSet
 end
 MaracasTestSet(desc) = MaracasTestSet(desc, [], ResultsCount(0, 0, 0, 0), 0)
 ResultsCount(ts::MaracasTestSet) = ts.count
+
+passes(ts::MaracasTestSet) = ts.count.passes
+fails(ts::MaracasTestSet)  = ts.count.fails
+errors(ts::MaracasTestSet) = ts.count.errors
+broken(ts::MaracasTestSet) = ts.count.broken
+total(ts::MaracasTestSet)  = ts.count.passes + ts.count.fails + ts.count.errors + ts.count.broken
+
+failed(ts::MaracasTestSet) = (errors(ts) > 0 || fails(ts) > 0 )
+
+function hwidth(ts::MaracasTestSet)
+    return Dict(
+    :passes => passes(ts) > 0 ? 8 : 0,
+    :fails => fails(ts) > 0 ? 8 : 0,
+    :errors => errors(ts) > 0 ? 8 : 0,
+    :broken => broken(ts) > 0 ? 8 : 0,
+    :total => total(ts) > 0 ? 8 : length("No Tests")
+    )
+end
 
 # For a broken result, simply store the result
 function record(ts::MaracasTestSet, t::Broken)
@@ -129,14 +126,14 @@ end
 
 function print_test_results(ts::MaracasTestSet)
     print_summary()
-    print_col_header(MARACAS_SETTING[:pass], "Pass", passes(ts.count))
-    print_col_header(MARACAS_SETTING[:error], "Fail", fails(ts.count))
-    print_col_header(MARACAS_SETTING[:error], "Error", errors(ts.count))
-    print_col_header(MARACAS_SETTING[:warn], "Broken", broken(ts.count))
-    print_col_header(MARACAS_SETTING[:info], "Total", total(ts.count))
+    print_col_header(MARACAS_SETTING[:pass], "Pass", passes(ts))
+    print_col_header(MARACAS_SETTING[:error], "Fail", fails(ts))
+    print_col_header(MARACAS_SETTING[:error], "Error", errors(ts))
+    print_col_header(MARACAS_SETTING[:warn], "Broken", broken(ts))
+    print_col_header(MARACAS_SETTING[:info], "Total", total(ts))
     println()
     # Recursively print a summary at every level
-    print_counts(ts, 0, HeadersWidth(ts.count))
+    print_counts(ts, 0, hwidth(ts))
 end
 
 
@@ -158,12 +155,10 @@ function finish(ts::MaracasTestSet)
         print_test_results(ts)
     end
 
-    total_pass, total_fail, total_error, total_broken, subtotal = tuple(ts.count)
     # Finally throw an error as we are the outermost test set
-    if subtotal != total_pass + total_broken
+    if failed(ts)
         # Get all the error/failures and bring them along for the ride
-        efs = filter_errors(ts)
-        throw(TestSetException(total_pass, total_fail, total_error, total_broken, efs))
+        throw(TestSetException(passes(ts), fails(ts), errors(ts), broken(ts), filter_errors(ts)))
     end
 
     # return the testset so it is returned from the @testset macro
@@ -197,14 +192,14 @@ end
 # the tree of test sets
 function print_counts(ts::MaracasTestSet, depth, headers_width)
     print_title(ts.description, depth)
-    print_result_column(MARACAS_SETTING[:pass], ts.count.passes, headers_width.passes)
-    print_result_column(MARACAS_SETTING[:error], ts.count.fails, headers_width.fails)
-    print_result_column(MARACAS_SETTING[:error], ts.count.errors, headers_width.errors)
-    print_result_column(MARACAS_SETTING[:warn], ts.count.broken, headers_width.broken)
+    print_result_column(MARACAS_SETTING[:pass], passes(ts), passes(headers_width))
+    print_result_column(MARACAS_SETTING[:error], fails(ts), fails(headers_width))
+    print_result_column(MARACAS_SETTING[:error], errors(ts), errors(headers_width))
+    print_result_column(MARACAS_SETTING[:warn], broken(ts), broken(headers_width))
 
-    subtotal = total(ts.count)
+    subtotal = total(ts)
     result = subtotal == 0 ? "No tests" : string(subtotal)
-    print_with_color(MARACAS_SETTING[:info], lpad(result, headers_width.total, " "); bold = true)
+    print_with_color(MARACAS_SETTING[:info], lpad(result, total(headers_width), " "); bold = true)
     println()
 
     for t in ts.results
