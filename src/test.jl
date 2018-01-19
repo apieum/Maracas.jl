@@ -1,19 +1,8 @@
 using Compat
 import Compat.Test: AbstractTestSet, record, finish, get_testset_depth, get_testset, Broken, Pass, Fail, Error, TestSetException
 import Base.+
-if VERSION <= v"0.6"
-    rm_spec_char(text) = replace(text, r"\e\[[0-9;]+m", "")
-else
-    using Distributed
-    rm_spec_char(text) = replace(text, r"\e\[[0-9;]+m" => "")
-end
+include(ifelse(VERSION > v"0.6", "types-0.7.jl", "types-0.5.jl"))
 
-@compat mutable struct ResultsCount
-    passes::Int
-    fails::Int
-    errors::Int
-    broken::Int
-end
 ResultsCount(ts) = ResultsCount(0, 0, 0, 0)
 total(count::ResultsCount)  = count.passes + count.fails + count.errors + count.broken
 +(a::ResultsCount, b::ResultsCount) = ResultsCount(a.passes + b.passes, a.fails + b.fails, a.errors + b.errors, a.broken + b.broken)
@@ -52,15 +41,6 @@ function scrub_backtrace(bt)
     return bt
 end
 
-"""
-    MaracasTestSet
-"""
-@compat mutable struct MaracasTestSet <: AbstractTestSet
-    description::AbstractString
-    results::Vector
-    count::ResultsCount
-    max_depth::Int
-end
 MaracasTestSet(desc) = MaracasTestSet(desc, [], ResultsCount(0, 0, 0, 0), 0)
 ResultsCount(ts::MaracasTestSet) = ts.count
 
