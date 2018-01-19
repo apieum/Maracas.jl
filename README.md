@@ -22,6 +22,8 @@ using Maracas
 
 Then write your testsets with 'describe', 'it', or 'test' functions with the same assertions as usual (`@test`, `@test_throws`)
 
+You can also prefix testset functions with four underscore like '____describe', '____it', or '____test' to skip a testset: the title will be shown in test results but the testset is not executed and all contained tests are ignored.
+
 ```julia
 using Maracas
 if VERSION > v"0.6"
@@ -60,6 +62,21 @@ describe("it is a test suite") do
         description = "had a spec description not starting with it"
         a_spec = it(()->nothing, description)
         @test contains(a_spec.description, string("it ", description))
+    end
+
+    ____describe("a whole describe can be skipped with prefix ____") do
+        it("shouldn't be executed") do
+            @test false
+        end
+        test("shouldn't be executed neither") do
+            @test false
+        end
+    end
+    ____it("can skip 'it' with prefix ____") do
+            @test false
+    end
+    ____test("'test' can be skipped with prefix ____") do
+            @test false
     end
 end
 

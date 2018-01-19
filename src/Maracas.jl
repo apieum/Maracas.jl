@@ -2,7 +2,7 @@ module Maracas
 include("test.jl")
 export @test, @test_throws, @test_broken, @test_skip, @test_warn, @test_nowarn
 export @testset
-export describe, test, it, MARACAS_SETTING
+export describe, test, it, ____describe, ____test, ____it, MARACAS_SETTING
 export set_test_style, set_title_style, set_spec_style, set_error_color, set_warn_color, set_pass_color, set_info_color
 
 using Compat.Test
@@ -41,28 +41,34 @@ if VERSION < v"0.6"
     TestSetException(pass::Int64, fail::Int64, error::Int64, broken::Int64, errors_and_fails::Array{Any,1}) = Base.Test.TestSetException(pass, fail, error, broken)
 end
 
-function maracas(tests, desc)
+function maracas(tests, desc, skip::Bool=false)
     ts = MaracasTestSet(desc)
-    @compat Test.push_testset(ts)
-    try
-        tests()
-    catch err
-        record(ts, Error(:nontest_error, :(), err, catch_backtrace()))
+    if skip
+        record(ts, Broken(:skipped, ts))
+    else
+        Test.push_testset(ts)
+        try
+            tests()
+        catch err
+            record(ts, Error(:nontest_error, :(), err, catch_backtrace()))
+        end
+        Test.pop_testset()
     end
-    @compat Test.pop_testset()
     finish(ts)
 end
-function describe(tests::Function, desc)
+function describe(tests::Function, desc, skip::Bool=false)
     desc = string(MARACAS_SETTING[:title], desc, MARACAS_SETTING[:default], )
-    maracas(tests, desc)
+    maracas(tests, desc, skip)
 end
-function it(tests::Function, desc)
+function it(tests::Function, desc, skip::Bool=false)
     desc = string(MARACAS_SETTING[:spec], "[Spec] ", MARACAS_SETTING[:default], "it ", desc)
-    maracas(tests, desc)
+    maracas(tests, desc, skip)
 end
-function test(tests::Function, desc)
+function test(tests::Function, desc, skip::Bool=false)
     desc = string(MARACAS_SETTING[:test], "[Test] ", MARACAS_SETTING[:default], desc)
-    maracas(tests, desc)
+    maracas(tests, desc, skip)
 end
-
+____describe(tests::Function, desc)=describe(tests, desc, true)
+____it(tests::Function, desc)=it(tests, desc, true)
+____test(tests::Function, desc)=test(tests, desc, true)
 end
