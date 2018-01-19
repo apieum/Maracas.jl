@@ -24,12 +24,15 @@ Then write your testsets with 'describe', 'it', or 'test' functions with the sam
 
 ```julia
 using Maracas
+if VERSION > v"0.6"
+    using Test  # required only for using Test.AbstractTestSet
+end
 # 'describe', 'it' and 'test' return a MaracasTestSet <: Base.Test.AbstractTestSet
-is_a_spec(ts::Base.Test.AbstractTestSet)=contains(ts.description, "[Spec]")
-is_a_test(ts::Base.Test.AbstractTestSet)=contains(ts.description, "[Test]")
-is_magenta(ts::Base.Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:magenta])
-is_blue(ts::Base.Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:blue])
-is_cyan(ts::Base.Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:cyan])
+is_a_spec(ts::Test.AbstractTestSet)=contains(ts.description, "[Spec]")
+is_a_test(ts::Test.AbstractTestSet)=contains(ts.description, "[Test]")
+is_magenta(ts::Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:magenta])
+is_blue(ts::Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:blue])
+is_cyan(ts::Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:cyan])
 
 describe("it is a test suite") do
     it("has specs") do
