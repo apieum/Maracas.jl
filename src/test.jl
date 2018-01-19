@@ -1,7 +1,14 @@
+using Compat
 import Compat.Test: AbstractTestSet, record, finish, get_testset_depth, get_testset, Broken, Pass, Fail, Error, TestSetException
 import Base.+
+if VERSION <= v"0.6"
+    rm_spec_char(text) = replace(text, r"\e\[[0-9;]+m", "")
+else
+    using Distributed
+    rm_spec_char(text) = replace(text, r"\e\[[0-9;]+m" => "")
+end
 
-type ResultsCount
+@compat mutable struct ResultsCount
     passes::Int
     fails::Int
     errors::Int
@@ -48,7 +55,7 @@ end
 """
     MaracasTestSet
 """
-type MaracasTestSet <: AbstractTestSet
+@compat mutable struct MaracasTestSet <: AbstractTestSet
     description::AbstractString
     results::Vector
     count::ResultsCount
@@ -208,7 +215,6 @@ function print_counts(ts::MaracasTestSet, depth, headers_width)
 end
 print_counts(args...) = nothing
 
-rm_spec_char(text) = replace(text, r"\e\[[0-9;]+m" , "")
 caesura(text, quantity) = string(text[1:(end + quantity - 4)], Base.text_colors[:red], "... ")
 function rpad_title(text)
     space_repeat = MARACAS_SETTING[:title_length] - length(rm_spec_char(text))

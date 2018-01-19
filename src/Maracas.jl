@@ -43,13 +43,13 @@ end
 
 function maracas(tests, desc)
     ts = MaracasTestSet(desc)
-    Base.Test.push_testset(ts)
+    @compat Test.push_testset(ts)
     try
         tests()
     catch err
         record(ts, Error(:nontest_error, :(), err, catch_backtrace()))
     end
-    Base.Test.pop_testset()
+    @compat Test.pop_testset()
     finish(ts)
 end
 function describe(tests::Function, desc)

@@ -1,5 +1,5 @@
 using Maracas
-using Base.Test
+
 import Maracas: AbstractTestSet, rm_spec_char, rpad_title
 @testset "Maracas" begin
     @testset "'describe' returns a TestSet" begin
