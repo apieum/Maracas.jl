@@ -1,5 +1,5 @@
 using Maracas
-if VERSION > v"0.6"
+if VERSION > v"0.6.9"
     using Test
 end
 # 'describe', 'it' and 'test' return a MaracasTestSet <: Base.Test.AbstractTestSet

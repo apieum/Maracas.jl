@@ -1,7 +1,7 @@
 using Compat
 import Compat.Test: AbstractTestSet, record, finish, get_testset_depth, get_testset, Broken, Pass, Fail, Error, TestSetException
 import Base.+
-include(ifelse(VERSION > v"0.6", "types-0.7.jl", "types-0.5.jl"))
+include(ifelse(VERSION > v"0.6.9", "types-0.7.jl", "types-0.5.jl"))
 
 ResultsCount(ts) = ResultsCount(0, 0, 0, 0)
 total(count::ResultsCount)  = count.passes + count.fails + count.errors + count.broken
