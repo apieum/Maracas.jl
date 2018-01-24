@@ -14,3 +14,5 @@ type MaracasTestSet <: AbstractTestSet
     count::ResultsCount
     max_depth::Int
 end
+
+Error(test_type::Symbol, orig_expr, value, backtrace, source)=Error(test_type::Symbol, orig_expr, value, backtrace)

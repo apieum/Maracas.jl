@@ -17,25 +17,18 @@ fails(count::Dict)  = get(count, :fails, 0)
 errors(count::Dict) = get(count, :errors, 0)
 broken(count::Dict) = get(count, :broken, 0)
 total(count::Dict)  = passes(count) + fails(count) + errors(count) + broken(count)
-# Backtrace utility functions copied from test.jl because VERSION < v"0.6" haven't it
-function ip_matches_func_and_name(ip, func::Symbol, dir::String, file::String)
-    for fr in StackTraces.lookup(ip)
-        if fr === StackTraces.UNKNOWN || fr.from_c
-            return false
-        end
-        path = string(fr.file)
-        fr.func == func && dirname(path) == dir && basename(path) == file && return true
-    end
-    return false
+# Backtrace utility functions copied from Test.jl
+function ip_has_file_and_func(ip, file, funcs)
+    return any(fr -> (contains(string(fr.file), file) && fr.func in funcs), StackTraces.lookup(ip))
 end
 
 function scrub_backtrace(bt)
-    do_test_ind = findfirst(addr->ip_matches_func_and_name(addr, :do_test, ".", "test.jl"), bt)
-    if do_test_ind != 0 && length(bt) > do_test_ind
+    do_test_ind = findfirst(ip -> ip_has_file_and_func(ip, r"[Tt]est.jl$", (:do_test, :do_test_throws)), bt)
+    if do_test_ind !== nothing && length(bt) > do_test_ind
         bt = bt[do_test_ind + 1:end]
     end
-    name_ind = findfirst(addr->ip_matches_func_and_name(addr, Symbol("macro expansion"), ".", "test.jl"), bt)
-    if name_ind != 0 && length(bt) != 0
+    name_ind = findfirst(ip -> ip_has_file_and_func(ip, r"Maracas.jl", (:describe, )), bt)
+    if name_ind !== nothing && length(bt) != 0
         bt = bt[1:name_ind]
     end
     return bt

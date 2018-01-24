@@ -50,7 +50,7 @@ function maracas(tests, desc, skip::Bool=false)
         try
             tests()
         catch err
-            record(ts, Error(:nontest_error, :(), err, catch_backtrace()))
+            record(ts, Error(:nontest_error, :(), err, catch_backtrace(), LineNumberNode(0)))
         end
         Test.pop_testset()
     end
