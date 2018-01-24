@@ -64,7 +64,7 @@ describe("it is a test suite") do
         @test contains(a_spec.description, string("it ", description))
     end
 
-    ____describe("a whole describe can be skipped with prefix ____") do
+____describe("a whole describe can be skipped with prefix ____") do
         it("shouldn't be executed") do
             @test false
         end
@@ -72,10 +72,10 @@ describe("it is a test suite") do
             @test false
         end
     end
-    ____it("can skip 'it' with prefix ____") do
+____it("can skip 'it' with prefix ____") do
             @test false
     end
-    ____test("'test' can be skipped with prefix ____") do
+____test("'test' can be skipped with prefix ____") do
             @test false
     end
 end
