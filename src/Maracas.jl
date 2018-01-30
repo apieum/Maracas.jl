@@ -38,29 +38,25 @@ set_info_color(color::TextColor) = (MARACAS_SETTING[:info] = color)
 
 
 function maracas(tests, ts::MaracasTestSet, skip::Bool=false)
-    if skip
-        record(ts, Broken(:skipped, ts))
-    else
-        Test.push_testset(ts)
-        try
-            tests()
-        catch err
-            record(ts, Error(:nontest_error, :(), err, catch_backtrace(), LineNumberNode(0)))
-        end
-        Test.pop_testset()
+    Test.push_testset(ts)
+    try
+        tests()
+    catch err
+        record(ts, Error(:nontest_error, :(), err, catch_backtrace(), LineNumberNode(0)))
     end
+    Test.pop_testset()
     finish(ts)
 end
-function describe(tests::Function, desc, skip::Bool=false)
-    maracas(tests, DescribeTestSet(desc), skip)
+
+function maracas_skip(tests, ts::MaracasTestSet)
+    record(ts, Broken(:skipped, ts))
+    finish(ts)
 end
-function it(tests::Function, desc, skip::Bool=false)
-    maracas(tests, SpecTestSet(desc), skip)
-end
-function test(tests::Function, desc, skip::Bool=false)
-    maracas(tests, TestTestSet(desc), skip)
-end
-____describe(tests::Function, desc)=describe(tests, desc, true)
-____it(tests::Function, desc)=it(tests, desc, true)
-____test(tests::Function, desc)=test(tests, desc, true)
+describe(tests::Function, desc) = maracas(tests, DescribeTestSet(desc))
+it(tests::Function, desc) = maracas(tests, SpecTestSet(desc))
+test(tests::Function, desc) = maracas(tests, TestTestSet(desc))
+
+____describe(tests::Function, desc)=maracas_skip(tests, DescribeTestSet(desc))
+____it(tests::Function, desc)=maracas_skip(tests, SpecTestSet(desc))
+____test(tests::Function, desc)=maracas_skip(tests, TestTestSet(desc))
 end
