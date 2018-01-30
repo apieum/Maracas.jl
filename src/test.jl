@@ -1,7 +1,14 @@
 using Compat
 import Compat.Test: AbstractTestSet, record, finish, get_testset_depth, get_testset, Broken, Pass, Fail, Error, TestSetException
 import Base.+
-include(ifelse(VERSION > v"0.6.9", "types-0.7.jl", "types-0.5.jl"))
+include(ifelse(VERSION > v"0.5.9", "types-0.7.jl", "types-0.5.jl"))
+
+@MaracasTestSet("DescribeTestSet")
+@MaracasTestSet("SpecTestSet")
+@MaracasTestSet("TestTestSet")
+format_title(::Type{DescribeTestSet}, desc) = string(MARACAS_SETTING[:title], desc, MARACAS_SETTING[:default])
+format_title(::Type{SpecTestSet}, desc) = string(MARACAS_SETTING[:spec], "[Spec] ", MARACAS_SETTING[:default], "it ", desc)
+format_title(::Type{TestTestSet}, desc) = string(MARACAS_SETTING[:test], "[Test] ", MARACAS_SETTING[:default], desc)
 
 ResultsCount(ts) = ResultsCount(0, 0, 0, 0)
 total(count::ResultsCount)  = count.passes + count.fails + count.errors + count.broken
@@ -34,7 +41,6 @@ function scrub_backtrace(bt)
     return bt
 end
 
-MaracasTestSet(desc) = MaracasTestSet(desc, [], ResultsCount(0, 0, 0, 0), 0)
 ResultsCount(ts::MaracasTestSet) = ts.count
 
 passes(ts::MaracasTestSet) = ts.count.passes

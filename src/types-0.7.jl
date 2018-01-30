@@ -1,4 +1,6 @@
-using Distributed
+if VERSION > v"0.6.9"
+    using Distributed
+end
 rm_spec_char(text) = replace(text, r"\e\[[0-9;]+m" => "")
 
 mutable struct ResultsCount
@@ -10,9 +12,23 @@ end
 """
     MaracasTestSet
 """
-mutable struct MaracasTestSet <: AbstractTestSet
-    description::AbstractString
-    results::Vector
-    count::ResultsCount
-    max_depth::Int
+abstract type MaracasTestSet <: AbstractTestSet end
+
+macro MaracasTestSet(type_name)
+    base_type = Meta.parse("""
+        mutable struct $type_name <: MaracasTestSet
+            description::AbstractString
+            results::Vector
+            count::ResultsCount
+            max_depth::Int
+            $type_name(desc, results, count, max_depth)=new(format_title($type_name, desc), results, count, max_depth)
+        end
+    """)
+    constructor = Meta.parse("""
+        $type_name(desc) = $type_name(desc, [], ResultsCount(0, 0, 0, 0), 0)
+    """)
+    esc(quote
+        $base_type
+        $constructor
+    end)
 end

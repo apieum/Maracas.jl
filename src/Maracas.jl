@@ -36,13 +36,8 @@ set_warn_color(color::TextColor) = (MARACAS_SETTING[:warn] = color)
 set_pass_color(color::TextColor) = (MARACAS_SETTING[:pass] = color)
 set_info_color(color::TextColor) = (MARACAS_SETTING[:info] = color)
 
-if VERSION < v"0.6"
-    print_with_color(args...;kwargs...) = Base.print_with_color(args...)
-    TestSetException(pass::Int64, fail::Int64, error::Int64, broken::Int64, errors_and_fails::Array{Any,1}) = Base.Test.TestSetException(pass, fail, error, broken)
-end
 
-function maracas(tests, desc, skip::Bool=false)
-    ts = MaracasTestSet(desc)
+function maracas(tests, ts::MaracasTestSet, skip::Bool=false)
     if skip
         record(ts, Broken(:skipped, ts))
     else
@@ -57,16 +52,13 @@ function maracas(tests, desc, skip::Bool=false)
     finish(ts)
 end
 function describe(tests::Function, desc, skip::Bool=false)
-    desc = string(MARACAS_SETTING[:title], desc, MARACAS_SETTING[:default], )
-    maracas(tests, desc, skip)
+    maracas(tests, DescribeTestSet(desc), skip)
 end
 function it(tests::Function, desc, skip::Bool=false)
-    desc = string(MARACAS_SETTING[:spec], "[Spec] ", MARACAS_SETTING[:default], "it ", desc)
-    maracas(tests, desc, skip)
+    maracas(tests, SpecTestSet(desc), skip)
 end
 function test(tests::Function, desc, skip::Bool=false)
-    desc = string(MARACAS_SETTING[:test], "[Test] ", MARACAS_SETTING[:default], desc)
-    maracas(tests, desc, skip)
+    maracas(tests, TestTestSet(desc), skip)
 end
 ____describe(tests::Function, desc)=describe(tests, desc, true)
 ____it(tests::Function, desc)=it(tests, desc, true)
