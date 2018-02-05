@@ -48,7 +48,7 @@ is_cyan(ts::Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:cya
     @skip @unit "'@unit' can be skipped with @skip" begin
         @test false
     end
-    @skip @testset "@skip work also with default testset but they're not shown" begin
+    @skip @testset "@skip works with default testset but it's not shown in results" begin
         @test false
     end
     @unit "@skip can also skip @test assertions" begin

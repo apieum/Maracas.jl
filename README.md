@@ -7,9 +7,10 @@ The **Maracas** package extends julia base/test.jl to provide syntactic sugar an
 
 - document your code with nested typed test sets
 - show indented colored results, modifiable by user
-- `describe(func::Function, description::String)` : group tests under the given description
-- `it(func::Function, description::String)` : describe a specification
-- `test(func::Function, description::String)` : describe a non regression test
+- `@describe description::String begin ... end` : group tests under the given description
+- `@it description::String begin ... end` : describe a specification
+- `@unit description::String begin ... end` : describe a simple unit test
+- `@skip` : will mark as skipped any assertion test, or maracas testset, macro placed after it.
 
 
 ## Usage
@@ -20,9 +21,11 @@ First, in your test file declare you're using the package:
 using Maracas
 ```
 
-Then write your testsets with 'describe', 'it', or 'test' functions with the same assertions as usual (`@test`, `@test_throws`)
+Then write your testsets with `@describe`, `@it`, or `@unit` functions with the same assertions as usual (`@test`, `@test_throws`)
 
-You can also prefix testset functions with four underscore like '____describe', '____it', or '____test' to skip a testset: the title will be shown in test results but the testset is not executed and all contained tests are ignored.
+You can also prefix testset functions with @skip like '@skip @describe', '@skip @it', or '@skip @unit' to skip a testset: the title will be shown in test results but the testset is not executed and all contained tests are ignored.
+
+@skip works also before any macro starting with *"@test"* (`@test`, `@test_throws`, `@test_broken`...)
 
 ```julia
 using Maracas
@@ -73,6 +76,9 @@ is_cyan(ts::Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:cya
         @test false
     end
     @skip @unit "'@unit' can be skipped with @skip" begin
+        @test false
+    end
+    @skip @testset "@skip works with default testset but it's not shown in results" begin
         @test false
     end
     @unit "@skip can also skip @test assertions" begin
