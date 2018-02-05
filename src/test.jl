@@ -1,5 +1,3 @@
-using Compat
-import Compat.Test: AbstractTestSet, record, finish, get_testset_depth, get_testset, Broken, Pass, Fail, Error, TestSetException
 import Base.+
 include(ifelse(VERSION > v"0.5.9", "types-0.7.jl", "types-0.5.jl"))
 
@@ -195,6 +193,8 @@ end
 print_counts(args...) = nothing
 
 caesura(text, quantity) = string(text[1:(end + quantity - 4)], Base.text_colors[:red], "... ")
+
+rm_spec_char(text) = replace(text, r"\e\[[0-9;]+m" => "")
 function rpad_title(text)
     space_repeat = MARACAS_SETTING[:title_length] - length(rm_spec_char(text))
     return space_repeat > 0 ? string(text, " "^space_repeat) : caesura(text, space_repeat)

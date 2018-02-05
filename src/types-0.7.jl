@@ -1,7 +1,6 @@
 if VERSION > v"0.6.9"
     using Distributed
 end
-rm_spec_char(text) = replace(text, r"\e\[[0-9;]+m" => "")
 
 mutable struct ResultsCount
     passes::Int

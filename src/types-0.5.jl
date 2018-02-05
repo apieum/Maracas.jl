@@ -1,4 +1,3 @@
-rm_spec_char(text) = replace(text, r"\e\[[0-9;]+m", "")
 type ResultsCount
     passes::Int
     fails::Int
@@ -28,7 +27,3 @@ macro MaracasTestSet(type_name)
         $constructor
     end)
 end
-
-Error(test_type::Symbol, orig_expr, value, backtrace, source)=Error(test_type::Symbol, orig_expr, value, backtrace)
-print_with_color(args...;kwargs...) = Base.print_with_color(args...)
-TestSetException(pass::Int64, fail::Int64, error::Int64, broken::Int64, errors_and_fails::Array{Any,1}) = Base.Test.TestSetException(pass, fail, error, broken)

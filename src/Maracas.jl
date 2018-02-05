@@ -1,11 +1,10 @@
 module Maracas
+include(ifelse(VERSION > v"0.6.9", "compat-0.7.jl", "compat-0.6.jl"))
 include("test.jl")
 export @test, @test_throws, @test_broken, @test_skip, @test_warn, @test_nowarn
 export @testset
 export @describe, @it, @unit, @skip, MARACAS_SETTING
 export set_test_style, set_title_style, set_spec_style, set_error_color, set_warn_color, set_pass_color, set_info_color
-
-using Compat.Test
 
 const MARACAS_SETTING = Dict(
     :error => Symbol(get(ENV, "MARACAS_ERROR", :red)),
@@ -37,9 +36,6 @@ set_warn_color(color::TextColor) = (MARACAS_SETTING[:warn] = color)
 set_pass_color(color::TextColor) = (MARACAS_SETTING[:pass] = color)
 set_info_color(color::TextColor) = (MARACAS_SETTING[:info] = color)
 
-if VERSION <= v"0.6.9"
-    const __source__ = LineNumberNode(0)
-end
 const MACRO_TYPES = Dict(
     "@describe" => DescribeTestSet,
     "@it" => SpecTestSet,
