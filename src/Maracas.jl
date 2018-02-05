@@ -2,10 +2,11 @@ module Maracas
 include("test.jl")
 export @test, @test_throws, @test_broken, @test_skip, @test_warn, @test_nowarn
 export @testset
-export describe, test, it, ____describe, ____test, ____it, MARACAS_SETTING
+export @describe, @it, @unit, @skip, MARACAS_SETTING
 export set_test_style, set_title_style, set_spec_style, set_error_color, set_warn_color, set_pass_color, set_info_color
 
 using Compat.Test
+
 const MARACAS_SETTING = Dict(
     :error => Symbol(get(ENV, "MARACAS_ERROR", :red)),
     :warn =>  Symbol(get(ENV, "MARACAS_WARN", :yellow)),
@@ -36,27 +37,79 @@ set_warn_color(color::TextColor) = (MARACAS_SETTING[:warn] = color)
 set_pass_color(color::TextColor) = (MARACAS_SETTING[:pass] = color)
 set_info_color(color::TextColor) = (MARACAS_SETTING[:info] = color)
 
+if VERSION <= v"0.6.9"
+    const __source__ = LineNumberNode(0)
+end
+const MACRO_TYPES = Dict(
+    "@describe" => DescribeTestSet,
+    "@it" => SpecTestSet,
+    "@unit" => TestTestSet,
+)
 
-function maracas(tests, ts::MaracasTestSet, skip::Bool=false)
-    Test.push_testset(ts)
-    try
-        tests()
-    catch err
-        record(ts, Error(:nontest_error, :(), err, catch_backtrace(), LineNumberNode(0)))
+function _check_args(macro_name, desc, tests)
+    if !isa(desc, AbstractString) && !(isa(desc, Expr) && desc.head == :string)
+        error("Unexpected argument $desc to $macro_name")
     end
-    Test.pop_testset()
-    finish(ts)
+    if !isa(tests, Expr) || tests.head != :block
+        error("Expected begin/end block as argument to $macro_name")
+    end
+    return desc, tests
+end
+function genexpr(macro_name, desc, tests, source)
+    _check_args(macro_name, desc, tests)
+    ex = quote
+        ts = $(MACRO_TYPES[string(macro_name)])($desc)
+        while false; end
+        Test.push_testset(ts)
+        try
+            $(esc(tests))
+        catch err
+            record(ts, Error(:nontest_error, :(), err, catch_backtrace(), $(QuoteNode(source))))
+        end
+        Test.pop_testset()
+        finish(ts)
+    end
+    if !isempty(tests.args) &&  isa(tests.args[1], LineNumberNode)
+        ex = Expr(:block, tests.args[1], ex)
+    end
+    return ex
+end
+macro describe(desc, tests)
+    genexpr("@describe", desc, tests, __source__)
 end
 
-function maracas_skip(tests, ts::MaracasTestSet)
-    record(ts, Broken(:skipped, ts))
-    finish(ts)
+macro it(desc, tests)
+    genexpr("@it", desc, tests, __source__)
 end
-describe(tests::Function, desc) = maracas(tests, DescribeTestSet(desc))
-it(tests::Function, desc) = maracas(tests, SpecTestSet(desc))
-test(tests::Function, desc) = maracas(tests, TestTestSet(desc))
 
-____describe(tests::Function, desc)=maracas_skip(tests, DescribeTestSet(desc))
-____it(tests::Function, desc)=maracas_skip(tests, SpecTestSet(desc))
-____test(tests::Function, desc)=maracas_skip(tests, TestTestSet(desc))
+macro unit(desc, tests)
+    genexpr("@unit", desc, tests, __source__)
+end
+
+function extract_test_title(args)
+    for arg in args
+        if isa(arg, AbstractString) return arg end
+    end
+    return ""
+end
+
+macro skip(tests)
+    if tests.head != :macrocall
+        error("@skip must be followed by a testing macro (@describe, @it, @unit, @test)")
+    end
+    macro_name = string(first(tests.args))
+    if startswith(macro_name, "@test")
+        orig_ex = Expr(:inert, tests.args[2:end])
+        testres = :(Broken(:skipped, $orig_ex))
+        return :(record(get_testset(), $testres))
+    end
+    desc = extract_test_title(tests.args)
+    ex = quote
+        ts = $(MACRO_TYPES[macro_name])($desc)
+        record(ts, Broken(:skipped, ts))
+        finish(ts)
+    end
+    return ex
+end
+
 end

@@ -1,6 +1,6 @@
 using Maracas
 if VERSION > v"0.6.9"
-    using Test
+    using Test  # required only for using Test.AbstractTestSet
 end
 # 'describe', 'it' and 'test' return a MaracasTestSet <: Base.Test.AbstractTestSet
 is_a_spec(ts::Test.AbstractTestSet)=contains(ts.description, "[Spec]")
@@ -9,43 +9,49 @@ is_magenta(ts::Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:
 is_blue(ts::Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:blue])
 is_cyan(ts::Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:cyan])
 
-describe("it is a test suite") do
-    it("has specs") do
-        a_spec = it(()->nothing, "is made by calling function 'it'")
+@describe "it is a test suite" begin
+    @it "has specs" begin
+        a_spec = @it("is made with macro '@it'", begin end)
         @test is_a_spec(a_spec)
     end
-    it("has tests") do
-        a_test = test(()->nothing, "made by calling function 'test'")
+    @it "has tests" begin
+        a_test = @unit("made with macro '@unit'", begin end)
         @test is_a_test(a_test)
     end
 
-    test("test suite title is magenta by default") do
-        nested_describe = describe(()->nothing, "you can document your code with your tests")
+    @unit "test suite title is magenta by default" begin
+        nested_describe = @describe("you can document your code with your tests", begin end)
         @test is_magenta(nested_describe)
     end
 
-    test("spec title is cyan by default") do
-        @test is_cyan(it(()->nothing, "is cyan"))
+    @unit "spec title is cyan by default" begin
+        @test is_cyan(@it("is cyan", begin end))
     end
-    test("test title is blue by default") do
-        @test is_blue(test(()->nothing, "in blue"))
+    @unit "test title is blue by default" begin
+        @test is_blue(@unit("in blue", begin end))
     end
 
-    test("'it' is prepended to specs") do
+    @unit "'it' is prepended to specs" begin
         description = "had a spec description not starting with it"
-        a_spec = it(()->nothing, description)
+        a_spec = @it("had a spec description not starting with it", begin end)
         @test contains(a_spec.description, string("it ", description))
     end
 
-    ____describe("a whole describe can be skipped with prefix ____") do
-        test("should not be executed") do
+    @skip @describe "a whole describe can be skipped" begin
+        @it "should not be executed" begin
             @test false
         end
     end
-    ____it("can skip 'it' with prefix ____") do
-            @test false
+    @skip @it "can skip '@it' with @skip" begin
+        @test false
     end
-    ____test("'test' can be skipped with prefix ____") do
-            @test false
+    @skip @unit "'@unit' can be skipped with @skip" begin
+        @test false
+    end
+    @unit "@skip can also skip @test assertions" begin
+        @skip @test false
+        @skip @test_throws false
+        @skip @test_skip false
+        @skip @test_broken false
     end
 end

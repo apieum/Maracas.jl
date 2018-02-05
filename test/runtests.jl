@@ -3,65 +3,65 @@ using Maracas
 import Maracas: AbstractTestSet, rm_spec_char, rpad_title
 @testset "Maracas" begin
     @testset "'describe' returns a TestSet" begin
-        @test isa(describe(()->nothing, "description"), AbstractTestSet)
+        @test isa(@describe("description", begin end), AbstractTestSet)
     end
 
     @testset "'describe' TestSet contains description" begin
         expected = "expected description"
-        ts = describe(()->nothing, expected)
+        ts = @describe("expected description", begin end)
         @test contains(ts.description, expected)
     end
 
     @testset "'describe' TestSet description is colored within 'title' env var" begin
-        ts = describe(()->nothing, "description")
+        ts = @describe("description", begin end)
         @test contains(ts.description, MARACAS_SETTING[:title])
     end
 
     @testset "'describe' TestSet description color can be changed" begin
         title_color = MARACAS_SETTING[:title]
         set_title_style(:blue)
-        ts = describe(()->nothing, "description")
+        ts = @describe("description", begin end)
         @test contains(ts.description, Base.text_colors[:blue])
         MARACAS_SETTING[:title] = title_color
     end
 
     @testset "'it' returns a TestSet" begin
-        @test isa(it(()->nothing, "description"), AbstractTestSet)
+        @test isa(@it("description", begin end), AbstractTestSet)
     end
 
     @testset "'it' TestSet contains description" begin
         expected = "expected description for it"
-        ts = it(()->nothing, expected)
+        ts = @it("expected description for it", begin end)
         @test contains(ts.description, expected)
     end
 
     @testset "'it' TestSet contains [Spec]" begin
-        ts = it(()->nothing, "description")
+        ts = @it("description", begin end)
         @test contains(ts.description, "[Spec]")
     end
 
     @testset "'it' TestSet description is colored within 'spec' env var" begin
-        ts = it(()->nothing, "description")
+        ts = @it("description", begin end)
         @test contains(ts.description, MARACAS_SETTING[:spec])
     end
 
     @testset "'test' returns a TestSet" begin
-        @test isa(test(()->nothing, "description"), AbstractTestSet)
+        @test isa(@unit("description", begin end), AbstractTestSet)
     end
 
     @testset "'test' TestSet contains description" begin
-        expected = "expected description for it"
-        ts = test(()->nothing, expected)
+        expected = "expected description for unit"
+        ts = @unit("expected description for unit", begin end)
         @test contains(ts.description, expected)
     end
 
     @testset "'test' TestSet contains [Test]" begin
-        ts = test(()->nothing, "description")
+        ts = @unit("description", begin end)
         @test contains(ts.description, "[Test]")
     end
 
     @testset "'test' TestSet description is colored within 'test' env var" begin
-        ts = test(()->nothing, "description")
+        ts = @unit("description", begin end)
         @test contains(ts.description, MARACAS_SETTING[:test])
     end
 
