@@ -4,6 +4,7 @@ include("test.jl")
 export @test, @test_throws, @test_broken, @test_skip, @test_warn, @test_nowarn
 export @testset
 export @describe, @it, @unit, @skip, MARACAS_SETTING
+export MaracasTestSet, DescribeTestSet, SpecTestSet, TestTestSet
 export set_test_style, set_title_style, set_spec_style, set_error_color, set_warn_color, set_pass_color, set_info_color
 
 const MARACAS_SETTING = Dict(

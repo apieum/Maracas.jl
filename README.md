@@ -29,24 +29,20 @@ You can also prefix testset functions with @skip like '@skip @describe', '@skip 
 
 ```julia
 using Maracas
-if VERSION > v"0.6.9"
-    using Test  # required only for using Test.AbstractTestSet
-end
-# 'describe', 'it' and 'test' return a MaracasTestSet <: Base.Test.AbstractTestSet
-is_a_spec(ts::Test.AbstractTestSet)=contains(ts.description, "[Spec]")
-is_a_test(ts::Test.AbstractTestSet)=contains(ts.description, "[Test]")
-is_magenta(ts::Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:magenta])
-is_blue(ts::Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:blue])
-is_cyan(ts::Test.AbstractTestSet)=contains(ts.description, Base.text_colors[:cyan])
+
+# abstract MaracasTestSet <: Base.Test.AbstractTestSet
+is_magenta(ts::MaracasTestSet)=contains(ts.description, Base.text_colors[:magenta])
+is_blue(ts::MaracasTestSet)=contains(ts.description, Base.text_colors[:blue])
+is_cyan(ts::MaracasTestSet)=contains(ts.description, Base.text_colors[:cyan])
 
 @describe "it is a test suite" begin
     @it "has specs" begin
         a_spec = @it("is made with macro '@it'", begin end)
-        @test is_a_spec(a_spec)
+        @test contains(a_spec.description, "[Spec]")
     end
     @it "has tests" begin
         a_test = @unit("made with macro '@unit'", begin end)
-        @test is_a_test(a_test)
+        @test contains(a_test.description, "[Test]")
     end
 
     @unit "test suite title is magenta by default" begin
