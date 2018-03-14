@@ -75,7 +75,7 @@ end
 function record(ts::MaracasTestSet, t::Union{Fail, Error})
     ts.count += t;
     if myid() == 1
-        print_with_color(:bold, ts.description, ": ")
+        printstyled(ts.description, ": ", bold=true)
         print(t)
         # don't print the backtrace for Errors because it gets printed in the show
         # method
@@ -104,7 +104,7 @@ print_test_errors(t) = nothing
 
 function print_col_header(color::Symbol, title::AbstractString, result::Int)
     result == 0 && return
-    print_with_color(color, lpad(title, 8); bold = true)
+    printstyled(lpad(title, 8); bold=true, color=color)
 end
 
 
@@ -167,7 +167,7 @@ end
 
 function print_result_column(color, result, width)
     if result > 0
-        print_with_color(color, lpad(string(result), width, " "), "  "; bold = true)
+        printstyled(lpad(string(result), width, " "), "  "; bold=true, color=color)
     elseif width > 0
         print(lpad(" ", width), "  ")
     end
@@ -183,7 +183,7 @@ function print_counts(ts::MaracasTestSet, depth, headers_width)
 
     subtotal = total(ts)
     result = subtotal == 0 ? "No tests" : string(subtotal)
-    print_with_color(MARACAS_SETTING[:info], lpad(result, total(headers_width), " "); bold = true)
+    printstyled(lpad(result, total(headers_width), " "); bold=true, color=MARACAS_SETTING[:info])
     println()
 
     for t in ts.results

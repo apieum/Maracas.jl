@@ -9,3 +9,4 @@ if VERSION <= v"0.5.9"
     print_with_color(args...;kwargs...) = Base.print_with_color(args...)
     TestSetException(pass::Int64, fail::Int64, error::Int64, broken::Int64, errors_and_fails::Array{Any,1}) = Base.Test.TestSetException(pass, fail, error, broken)
 end
+printstyled(args...;color=:default, bold=false) = print_with_color(color, args...; bold=bold)
