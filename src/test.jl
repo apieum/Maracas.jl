@@ -1,5 +1,5 @@
 import Base.+
-include(ifelse(VERSION > v"0.5.9", "types-0.7.jl", "types-0.5.jl"))
+include(ifelse(VERSION >= v"0.6.0-", "types-0.7.jl", "types-0.5.jl"))
 
 @MaracasTestSet("DescribeTestSet")
 @MaracasTestSet("SpecTestSet")

@@ -1,5 +1,5 @@
 module Maracas
-include(ifelse(VERSION > v"0.6.9", "compat-0.7.jl", "compat-0.6.jl"))
+include(ifelse(VERSION >= v"0.7.0-", "compat-0.7.jl", "compat-0.6.jl"))
 include("test.jl")
 export @test, @test_throws, @test_broken, @test_skip, @test_warn, @test_nowarn
 export @testset
