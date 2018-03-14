@@ -79,7 +79,7 @@ function record(ts::MaracasTestSet, t::Union{Fail, Error})
         print(t)
         # don't print the backtrace for Errors because it gets printed in the show
         # method
-        isa(t, Error) || Base.show_backtrace(STDOUT, scrub_backtrace(backtrace()))
+        isa(t, Error) || Base.show_backtrace(stdout, scrub_backtrace(backtrace()))
         println()
     end
     push!(ts.results, t)
@@ -96,7 +96,7 @@ print_test_errors(ts::MaracasTestSet) = map(print_test_errors, ts.results)
 function print_test_errors(t::Union{Fail, Error})
     if myid() == 1
         println("Error in testset $(ts.description):")
-        Base.show(STDOUT,t)
+        Base.show(stdout, t)
         println()
     end
 end
