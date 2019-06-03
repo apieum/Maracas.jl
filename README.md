@@ -3,6 +3,10 @@
 
 The **Maracas** package extends julia base/test.jl to provide syntactic sugar and verbose output to tests.
 
+**Launch your tests as usual**
+
+![Maracas tests run Demo](demo.gif)
+
 ## Features
 
 - document your code with nested typed test sets
@@ -86,7 +90,8 @@ is_cyan(ts::MaracasTestSet)=contains(ts.description, Base.text_colors[:cyan])
 end
 
 ```
-**Changing Styles**
+
+### Changing Styles
 
 You can modify color and boldness with the folowing functions:
 
