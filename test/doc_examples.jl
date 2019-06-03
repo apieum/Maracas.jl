@@ -1,18 +1,18 @@
 using Maracas
 
 # abstract MaracasTestSet <: Base.Test.AbstractTestSet
-is_magenta(ts::MaracasTestSet)=contains(ts.description, Base.text_colors[:magenta])
-is_blue(ts::MaracasTestSet)=contains(ts.description, Base.text_colors[:blue])
-is_cyan(ts::MaracasTestSet)=contains(ts.description, Base.text_colors[:cyan])
+is_magenta(ts::MaracasTestSet)=occursin(Base.text_colors[:magenta], ts.description)
+is_blue(ts::MaracasTestSet)=occursin(Base.text_colors[:blue], ts.description)
+is_cyan(ts::MaracasTestSet)=occursin(Base.text_colors[:cyan], ts.description)
 
 @describe "it is a test suite" begin
     @it "has specs" begin
         a_spec = @it("is made with macro '@it'", begin end)
-        @test contains(a_spec.description, "[Spec]")
+        @test occursin("[Spec]", a_spec.description)
     end
     @it "has tests" begin
         a_test = @unit("made with macro '@unit'", begin end)
-        @test contains(a_test.description, "[Test]")
+        @test occursin("[Test]", a_test.description)
     end
 
     @unit "test suite title is magenta by default" begin
@@ -30,7 +30,7 @@ is_cyan(ts::MaracasTestSet)=contains(ts.description, Base.text_colors[:cyan])
     @unit "'it' is prepended to specs" begin
         description = "had a spec description not starting with it"
         a_spec = @it("had a spec description not starting with it", begin end)
-        @test contains(a_spec.description, string("it ", description))
+        @test occursin(string("it ", description), a_spec.description)
     end
 
     @skip @describe "a whole describe can be skipped" begin

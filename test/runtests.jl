@@ -9,19 +9,19 @@ import Maracas: AbstractTestSet, rm_spec_char, rpad_title
     @testset "'describe' TestSet contains description" begin
         expected = "expected description"
         ts = @describe("expected description", begin end)
-        @test contains(ts.description, expected)
+        @test occursin( expected, ts.description)
     end
 
     @testset "'describe' TestSet description is colored within 'title' env var" begin
         ts = @describe("description", begin end)
-        @test contains(ts.description, MARACAS_SETTING[:title])
+        @test occursin( MARACAS_SETTING[:title], ts.description)
     end
 
     @testset "'describe' TestSet description color can be changed" begin
         title_color = MARACAS_SETTING[:title]
         set_title_style(:blue)
         ts = @describe("description", begin end)
-        @test contains(ts.description, Base.text_colors[:blue])
+        @test occursin( Base.text_colors[:blue], ts.description)
         MARACAS_SETTING[:title] = title_color
     end
 
@@ -32,17 +32,17 @@ import Maracas: AbstractTestSet, rm_spec_char, rpad_title
     @testset "'it' TestSet contains description" begin
         expected = "expected description for it"
         ts = @it("expected description for it", begin end)
-        @test contains(ts.description, expected)
+        @test occursin( expected, ts.description)
     end
 
     @testset "'it' TestSet contains [Spec]" begin
         ts = @it("description", begin end)
-        @test contains(ts.description, "[Spec]")
+        @test occursin( "[Spec]", ts.description)
     end
 
     @testset "'it' TestSet description is colored within 'spec' env var" begin
         ts = @it("description", begin end)
-        @test contains(ts.description, MARACAS_SETTING[:spec])
+        @test occursin( MARACAS_SETTING[:spec], ts.description)
     end
 
     @testset "'test' returns a TestSet" begin
@@ -52,17 +52,17 @@ import Maracas: AbstractTestSet, rm_spec_char, rpad_title
     @testset "'test' TestSet contains description" begin
         expected = "expected description for unit"
         ts = @unit("expected description for unit", begin end)
-        @test contains(ts.description, expected)
+        @test occursin( expected, ts.description)
     end
 
     @testset "'test' TestSet contains [Test]" begin
         ts = @unit("description", begin end)
-        @test contains(ts.description, "[Test]")
+        @test occursin( "[Test]", ts.description)
     end
 
     @testset "'test' TestSet description is colored within 'test' env var" begin
         ts = @unit("description", begin end)
-        @test contains(ts.description, MARACAS_SETTING[:test])
+        @test occursin( MARACAS_SETTING[:test], ts.description)
     end
 
     @testset "padding results and descriptions" begin
