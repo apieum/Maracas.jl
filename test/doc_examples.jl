@@ -1,5 +1,7 @@
 using Maracas
-
+if VERSION < v"0.7"
+    occursin = (given, expected) -> contains(expected, given)
+end
 # abstract MaracasTestSet <: Base.Test.AbstractTestSet
 is_magenta(ts::MaracasTestSet)=occursin(Base.text_colors[:magenta], ts.description)
 is_blue(ts::MaracasTestSet)=occursin(Base.text_colors[:blue], ts.description)

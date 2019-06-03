@@ -1,5 +1,7 @@
 using Maracas
-
+if VERSION < v"0.7"
+    occursin = (given, expected) -> contains(expected, given)
+end
 import Maracas: AbstractTestSet, rm_spec_char, rpad_title
 @testset "Maracas" begin
     @testset "'describe' returns a TestSet" begin
