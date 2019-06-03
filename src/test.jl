@@ -1,5 +1,7 @@
 import Base.+
-include(ifelse(VERSION >= v"0.6.0-", "types-0.7.jl", "types-0.5.jl"))
+using Test
+import Test: AbstractTestSet, record, finish, get_testset_depth, get_testset, Broken, Pass, Fail, Error, TestSetException
+include("types.jl")
 
 @MaracasTestSet("DescribeTestSet")
 @MaracasTestSet("SpecTestSet")
@@ -24,7 +26,7 @@ broken(count::Dict) = get(count, :broken, 0)
 total(count::Dict)  = passes(count) + fails(count) + errors(count) + broken(count)
 # Backtrace utility functions copied from Test.jl
 function ip_has_file_and_func(ip, file, funcs)
-    return any(fr -> (contains(string(fr.file), file) && fr.func in funcs), StackTraces.lookup(ip))
+    return any(fr -> (occursin(file, string(fr.file)) && fr.func in funcs), StackTraces.lookup(ip))
 end
 
 function scrub_backtrace(bt)

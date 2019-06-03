@@ -1,6 +1,4 @@
-if VERSION > v"0.6.9"
-    using Distributed
-end
+using Distributed
 
 mutable struct ResultsCount
     passes::Int
